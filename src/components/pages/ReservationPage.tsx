@@ -113,24 +113,36 @@ export default function ReservationPage({ isAuth }: { isAuth: boolean }) {
           <form action="">
             <CardContent className="grid gap-4">
               {!isAuth && (
-                <div className="grid gap-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="email">Email</Label>
-                    <Link
-                      href="/register"
-                      className="ml-auto inline-block text-sm underline"
-                    >
-                      Create Member Pass?
-                    </Link>
+                <>
+                  <div className="grid gap-2">
+                    <div className="flex items-center">
+                      <Label htmlFor="email">Email</Label>
+                      <Link
+                        href="/register"
+                        className="ml-auto inline-block text-sm underline"
+                      >
+                        Create Member Pass?
+                      </Link>
+                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      name="email"
+                      placeholder="m@example.com"
+                      required
+                    />
                   </div>
-                  <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    placeholder="m@example.com"
-                    required
-                  />
-                </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      name="name"
+                      placeholder="Max Verstappen"
+                      required
+                    />
+                  </div>
+                </>
               )}
               <div className="grid gap-2">
                 <Label htmlFor="reservationType">Reservation Type</Label>

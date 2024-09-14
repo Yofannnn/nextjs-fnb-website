@@ -3,10 +3,14 @@
 import Image from "next/image";
 import { Product } from "@/types/product.type";
 import { Button } from "@/components/ui/button";
-import { Cart } from "@/types/cart.type";
+import { useDispatch } from "react-redux";
+import { addItemToCart } from "@/redux/slice/cart.slice";
+import { AppDispatch } from "@/redux/store";
 
 export default function MenuDetailsPage({ product }: { product: Product }) {
-  console.log(product);
+  const dispatch: AppDispatch = useDispatch();
+
+  const handleAddToCart = (id: string) => dispatch(addItemToCart(id));
 
   return (
     <>
@@ -18,9 +22,12 @@ export default function MenuDetailsPage({ product }: { product: Product }) {
             width={500}
             height={500}
             alt="Product Image"
+            priority={true}
           />
           <div>
-            <Button>Add to Cart</Button>
+            <Button onClick={() => handleAddToCart(product._id)}>
+              Add to Cart
+            </Button>
           </div>
         </div>
       </div>
