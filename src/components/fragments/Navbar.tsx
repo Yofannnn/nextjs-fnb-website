@@ -3,11 +3,18 @@ import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { Badge } from "@/components/ui/badge";
 import { CircleUserRound, ShoppingCart } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const totalItemInCart = useSelector((state: RootState) => state.cart)
     .map((item) => item.quantity)
     .reduce((acc, cur) => acc + cur, 0);
+
+  const paths = ["/login", "/register", "/dashboard"];
+  const pathName = usePathname();
+  const shouldNotRenderNavbar = paths.some((path) => pathName.startsWith(path));
+
+  if (shouldNotRenderNavbar) return;
 
   return (
     <>

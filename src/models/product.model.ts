@@ -10,6 +10,8 @@ const ProductSchema = new Schema(
     isAvailable: { type: Boolean, default: true, required: true },
     options: { type: [String], default: [], required: false },
     rating: { type: [Number], default: [], required: false },
+    reviews: { type: [String], default: [], required: false },
+    totalSales: { type: Number, default: 0, required: false },
   },
   {
     timestamps: true,

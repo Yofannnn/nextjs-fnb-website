@@ -5,6 +5,14 @@ export async function createProduct(payload: object) {
   return ProductModel.create(payload);
 }
 
+export async function updateProductById(id: string, payload: object) {
+  return ProductModel.findByIdAndUpdate(id, { $set: payload }, { new: true });
+}
+
+export async function deleteProductById(id: string) {
+  return ProductModel.findByIdAndDelete(id);
+}
+
 export async function getAllProducts() {
   return ProductModel.find();
 }

@@ -1,7 +1,8 @@
 import { verifySession } from "@/lib/dal";
 import { redirect } from "next/navigation";
+import AdminDashboardLayout from "@/components/layout/AdminDashboard";
 
-export default async function AdminDashboardLayout({
+export default async function AdminDashboard({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -9,10 +10,6 @@ export default async function AdminDashboardLayout({
   const session = await verifySession();
   const isAuth = session.isAuth;
   if (!isAuth) redirect("/login");
-  return (
-    <main className="w-full h-full">
-      <h1>Layout dashboard admin</h1>
-      {children}
-    </main>
-  );
+
+  return <AdminDashboardLayout>{children}</AdminDashboardLayout>;
 }

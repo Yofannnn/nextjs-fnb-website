@@ -2,7 +2,7 @@ import MenuDetailsPage from "@/components/pages/MenuDetails";
 
 async function getProductById(id: string) {
   try {
-    const res = await fetch(`${process.env.BASE_URL}/api/product?id=${id}`, {
+    const res = await fetch(`${process.env.BASE_URL}/api/products/read?id=${id}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });

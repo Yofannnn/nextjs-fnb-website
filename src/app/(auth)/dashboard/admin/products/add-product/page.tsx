@@ -23,7 +23,7 @@ import {
 import { useFormState } from "react-dom";
 import { addProduct } from "@/actions/product.action";
 
-export default function AddProduct() {
+export default function AddProductPage() {
   const [state, action] = useFormState(addProduct, {});
 
   return (

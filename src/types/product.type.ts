@@ -8,4 +8,8 @@ export interface Product {
   isAvailable: boolean;
   options?: string[];
   rating?: number[];
+  reviews?: string[];
+  totalSales?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -2,7 +2,7 @@ import MenuPage from "@/components/pages/MenuPage";
 
 async function getMenus() {
   try {
-    const res = await fetch(`${process.env.BASE_URL}/api/product`, {
+    const res = await fetch(`${process.env.BASE_URL}/api/products/read`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
