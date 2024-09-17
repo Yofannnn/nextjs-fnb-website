@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,6 +33,7 @@ import {
   Users2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logoutAction } from "@/actions/auth.action";
 
 export default function AdminDashboardLayout({
   children,
@@ -41,6 +42,12 @@ export default function AdminDashboardLayout({
 }>) {
   const pathName = usePathname();
   const sessionTitle = pathName.split("/").filter((x) => x);
+  const router = useRouter();
+
+  const handleClickLogOut = async () => {
+    await logoutAction();
+    router.push("/");
+  };
 
   return (
     <>
@@ -248,7 +255,9 @@ export default function AdminDashboardLayout({
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuItem>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Logout</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleClickLogOut}>
+                  Logout
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </header>

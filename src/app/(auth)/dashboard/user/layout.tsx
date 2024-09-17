@@ -1,7 +1,8 @@
+import UserDashboardLayout from "@/components/layout/UserDashboard";
 import { verifySession } from "@/lib/dal";
 import { redirect } from "next/navigation";
 
-export default async function UserDashboardLayout({
+export default async function UserDashboard({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -9,10 +10,5 @@ export default async function UserDashboardLayout({
   const session = await verifySession();
   const isAuth = session.isAuth;
   if (!isAuth) redirect("/login");
-  return (
-    <main className="w-full h-full">
-      <h1>Layout dashboard user</h1>
-      {children}
-    </main>
-  );
+  return <UserDashboardLayout>{children}</UserDashboardLayout>;
 }
