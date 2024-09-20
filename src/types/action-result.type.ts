@@ -1,5 +1,6 @@
 export interface ActionResult {
   success?: boolean;
+  data?: any;
   errors?: ActionErrors;
 }
 

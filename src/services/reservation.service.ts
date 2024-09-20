@@ -1,6 +1,6 @@
 import ReservationModel from "@/models/reservation.model";
 
-export async function addReservationList(payload: object) {
+export async function createReservationList(payload: object) {
   return ReservationModel.create(payload);
 }
 
@@ -21,6 +21,10 @@ export async function deleteReservationList(reservationId: string) {
 
 export async function getReservationById(reservationId: string) {
   return ReservationModel.findById(reservationId);
+}
+
+export async function getReservationByEmail(customerEmail: string) {
+  return ReservationModel.findOne({ customerEmail });
 }
 
 export async function getReservationList() {

@@ -29,7 +29,7 @@ export default function ReservationTableOnlyPage({
     user?.name
   );
   const [state, action] = useFormState(bindReservationTableOnlyAction, {});
-
+  
   return (
     <>
       <div className="w-full min-h-svh lg:grid lg:grid-cols-2">
@@ -49,7 +49,7 @@ export default function ReservationTableOnlyPage({
                   <>
                     <div className="grid gap-2">
                       <div className="flex items-center">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="customerEmail">Email</Label>
                         <Link
                           href="/register"
                           className="ml-auto inline-block text-sm underline"
@@ -58,19 +58,19 @@ export default function ReservationTableOnlyPage({
                         </Link>
                       </div>
                       <Input
-                        id="email"
+                        id="customerEmail"
+                        name="customerEmail"
                         type="email"
-                        name="email"
                         placeholder="m@example.com"
                         required
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="name">Name</Label>
+                      <Label htmlFor="customerName">Name</Label>
                       <Input
-                        id="name"
+                        id="customerName"
+                        name="customerName"
                         type="text"
-                        name="name"
                         placeholder="Max Verstappen"
                         required
                       />
@@ -79,21 +79,21 @@ export default function ReservationTableOnlyPage({
                 )}
                 <div className="flex flex-col md:flex-row justify-center items-center gap-2">
                   <div className="grid gap-2 w-full">
-                    <Label htmlFor="date">Date</Label>
+                    <Label htmlFor="reservationDate">reservationDate</Label>
                     <Input
-                      id="date"
+                      id="reservationDate"
+                      name="reservationDate"
                       type="date"
-                      name="date"
                       min={new Date().toISOString().split("T")[0]}
                       required
                     />
                   </div>
                   <div className="grid gap-2 w-full">
-                    <Label htmlFor="time">Time</Label>
+                    <Label htmlFor="reservationTime">reservationTime</Label>
                     <Input
-                      id="time"
+                      id="reservationTime"
+                      name="reservationTime"
                       type="time"
-                      name="time"
                       min="08:00"
                       max="20:00"
                       required
@@ -109,8 +109,8 @@ export default function ReservationTableOnlyPage({
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="quota">Party Size</Label>
-                  <Select name="quota" required>
+                  <Label htmlFor="partySize">Party Size</Label>
+                  <Select name="partySize" required>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select for how many people" />
                     </SelectTrigger>
@@ -126,8 +126,8 @@ export default function ReservationTableOnlyPage({
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="place">Place</Label>
-                  <Select name="place" required>
+                  <Label htmlFor="seatingPreference">Seating Preference</Label>
+                  <Select name="seatingPreference" required>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select Place at Outdoor or Indoor" />
                     </SelectTrigger>
@@ -140,11 +140,11 @@ export default function ReservationTableOnlyPage({
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="specialRequest">Special Request</Label>
                   <Textarea
                     className="min-h-[100px]"
-                    id="message"
-                    name="message"
+                    id="specialRequest"
+                    name="specialRequest"
                   />
                 </div>
               </div>
@@ -160,9 +160,10 @@ export default function ReservationTableOnlyPage({
           <Image
             src="/reservation-table-only.jpg"
             alt="Image"
-            width="1920"
-            height="1080"
+            width="480"
+            height="640"
             className="h-full w-full object-cover dark:brightness-[0.9]"
+            priority
           />
         </div>
       </div>
