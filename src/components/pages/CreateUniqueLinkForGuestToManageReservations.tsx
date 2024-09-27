@@ -11,33 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Reservation } from "@/types/reservation.type";
 import { useRouter } from "next/navigation";
 
-export default function ManageReservationPage({
-  reservationDetails,
-}: {
-  reservationDetails: Reservation;
-}) {
-  if (!reservationDetails.customerEmail)
-    return <InputWhenReservationDetailsIsInvalid />;
-
-  return (
-    <>
-      <div>
-        <h1>{reservationDetails.customerName}</h1>
-        <h1>{reservationDetails.customerEmail}</h1>
-        <h1>{reservationDetails.partySize}</h1>
-        <h1>{reservationDetails.reservationDate}</h1>
-        <h1>{reservationDetails.reservationTime}</h1>
-        <h1>{reservationDetails.seatingPreference}</h1>
-        <h1>{reservationDetails.tableOnly}</h1>
-      </div>
-    </>
-  );
-}
-
-function InputWhenReservationDetailsIsInvalid() {
+export default function CreateUniqueLinkForGuestToManageReservationsPage() {
   const router = useRouter();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

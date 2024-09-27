@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/table";
 import { ListFilter, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { rupiah } from "@/lib/format.currency";
+import { rupiah } from "@/lib/format-currency";
 import { deleteProduct } from "@/actions/product.action";
 
 export default function DashboardProduct() {

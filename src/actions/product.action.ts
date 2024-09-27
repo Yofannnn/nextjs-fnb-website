@@ -21,6 +21,7 @@ export async function addProduct(
     price,
     description,
     category,
+    image,
   });
 
   if (!validate.success) {

@@ -32,6 +32,12 @@ import { MinusIcon, PlusIcon, TrashIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Textarea } from "../ui/textarea";
+import { User } from "@/types/user.type";
+import { reservationIncludesDishAction } from "@/actions/reservation.action";
+import { useFormState } from "react-dom";
+import { rupiah } from "@/lib/format-currency";
+import { useRouter } from "next/navigation";
 
 interface MenuForReservation {
   id: string;
@@ -42,13 +48,41 @@ interface MenuForReservation {
 }
 
 export default function ReservationIncludeFoodPage({
-  isAuth,
+  user,
 }: {
-  isAuth: boolean;
+  user: User | undefined;
 }) {
   const [menusForReservation, setMenusForReservation] = useState<
     MenuForReservation[]
   >([]);
+
+  const bookedMenus = menusForReservation.map((menu) => {
+    return { productId: menu.id, quantity: menu.quantity };
+  });
+
+  const total = menusForReservation
+    .map((reservation) => reservation.price * reservation.quantity)
+    .reduce((acc, cur) => acc + cur, 0);
+
+  const downPayment = (total * 50) / 100;
+
+  const useReservationIncludesDish = reservationIncludesDishAction.bind(
+    null,
+    user?.email,
+    user?.name,
+    bookedMenus,
+    downPayment,
+    total
+  );
+
+  const [state, action] = useFormState(useReservationIncludesDish, {});
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.success) {
+      router.push(state.data.link);
+    }
+  }, [router, state]);
 
   function handleAddItem(product: MenuForReservation) {
     setMenusForReservation((prev) => {
@@ -107,19 +141,19 @@ export default function ReservationIncludeFoodPage({
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Reservation include food</CardTitle>
+              <CardTitle className="text-xl">Reservation</CardTitle>
               <CardDescription>
-                Enter your information about reservation
+                Please fill out this form to reserve a table
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action="">
-                <CardContent className="grid gap-4">
-                  {!isAuth && (
+              <form action={action}>
+                <div className="grid gap-4">
+                  {!user?.role && (
                     <>
                       <div className="grid gap-2">
                         <div className="flex items-center">
-                          <Label htmlFor="email">Email</Label>
+                          <Label htmlFor="customerEmail">Email</Label>
                           <Link
                             href="/register"
                             className="ml-auto inline-block text-sm underline"
@@ -128,19 +162,19 @@ export default function ReservationIncludeFoodPage({
                           </Link>
                         </div>
                         <Input
-                          id="email"
+                          id="customerEmail"
+                          name="customerEmail"
                           type="email"
-                          name="email"
                           placeholder="m@example.com"
                           required
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="customerName">Name</Label>
                         <Input
-                          id="name"
+                          id="customerName"
+                          name="customerName"
                           type="text"
-                          name="name"
                           placeholder="Max Verstappen"
                           required
                         />
@@ -149,21 +183,21 @@ export default function ReservationIncludeFoodPage({
                   )}
                   <div className="flex flex-col md:flex-row justify-center items-center gap-2">
                     <div className="grid gap-2 w-full">
-                      <Label htmlFor="date">Date</Label>
+                      <Label htmlFor="reservationDate">Reservation Date</Label>
                       <Input
-                        id="date"
+                        id="reservationDate"
+                        name="reservationDate"
                         type="date"
-                        name="date"
                         min={new Date().toISOString().split("T")[0]}
                         required
                       />
                     </div>
                     <div className="grid gap-2 w-full">
-                      <Label htmlFor="time">Time</Label>
+                      <Label htmlFor="reservationTime">Reservation Time</Label>
                       <Input
-                        id="time"
+                        id="reservationTime"
+                        name="reservationTime"
                         type="time"
-                        name="time"
                         min="08:00"
                         max="20:00"
                         required
@@ -179,14 +213,14 @@ export default function ReservationIncludeFoodPage({
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="quota">Quota</Label>
-                    <Select name="quota" required>
+                    <Label htmlFor="partySize">Party Size</Label>
+                    <Select name="partySize" required>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select for how many people" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="2">2 People</SelectItem>
+                          <SelectItem value="2">2 Guests</SelectItem>
                           <SelectItem value="6">6 People</SelectItem>
                           <SelectItem value="10">10 People</SelectItem>
                           <SelectItem value="20">20 People</SelectItem>
@@ -196,8 +230,10 @@ export default function ReservationIncludeFoodPage({
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="place">Place</Label>
-                    <Select name="place" required>
+                    <Label htmlFor="seatingPreference">
+                      Seating Preference
+                    </Label>
+                    <Select name="seatingPreference" required>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select Place at Outdoor or Indoor" />
                       </SelectTrigger>
@@ -209,12 +245,31 @@ export default function ReservationIncludeFoodPage({
                       </SelectContent>
                     </Select>
                   </div>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">
+                  <div className="grid gap-2">
+                    <Label htmlFor="specialRequest">Special Request</Label>
+                    <Textarea
+                      className="min-h-[100px]"
+                      id="specialRequest"
+                      name="specialRequest"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Bill</Label>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Downpayment</span>
+                      <span>{rupiah.format(downPayment)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Total</span>
+                      <span>{rupiah.format(total)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-8">
+                  <Button type="submit" className="w-full">
                     Process Your Reservation Now
                   </Button>
-                </CardFooter>
+                </div>
               </form>
             </CardContent>
           </Card>

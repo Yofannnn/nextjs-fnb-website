@@ -4,7 +4,7 @@ export async function createReservationList(payload: object) {
   return ReservationModel.create(payload);
 }
 
-export async function updateReservationList(
+export async function updateReservationById(
   reservationId: string,
   payload: object
 ) {
@@ -24,7 +24,7 @@ export async function getReservationById(reservationId: string) {
 }
 
 export async function getReservationByEmail(customerEmail: string) {
-  return ReservationModel.findOne({ customerEmail });
+  return ReservationModel.find({ customerEmail });
 }
 
 export async function getReservationList() {

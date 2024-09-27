@@ -1,21 +1,41 @@
+export enum SeatingPreference {
+  Indoor = "indoor",
+  Outdoor = "outdoor",
+}
+
+enum PaymentStatus {
+  DownPayment = "downPayment",
+  Paid = "paid",
+}
+
+enum ReservationStatus {
+  Pending = "pending",
+  Confirmed = "confirmed",
+  Cancelled = "cancelled",
+}
+
 export interface Reservation {
-  reservationId: string;
+  _id: string;
   customerName: string;
   customerEmail: string;
   reservationDate: string;
-  reservationTime: string;
   partySize: number;
-  seatingPreference: string;
+  seatingPreference: SeatingPreference;
   specialRequest?: string;
   tableOnly: boolean;
   menus?: MenuSelection[];
+  downPayment: number;
+  discount: number;
+  total: number;
+  paymentStatus: PaymentStatus;
+  reservationStatus: ReservationStatus;
+  reasonCancellation?: string;
+  reasonPending?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface MenuSelection {
   productId: string;
-  title: string;
-  price: number;
   quantity: number;
 }

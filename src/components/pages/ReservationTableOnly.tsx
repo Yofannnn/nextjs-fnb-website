@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { User } from "@/types/user.type";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useFormState } from "react-dom";
 
 export default function ReservationTableOnlyPage({
@@ -29,7 +31,14 @@ export default function ReservationTableOnlyPage({
     user?.name
   );
   const [state, action] = useFormState(bindReservationTableOnlyAction, {});
-  
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.success) {
+      router.push(state.data.link);
+    }
+  }, [router, state]);
+
   return (
     <>
       <div className="w-full min-h-svh lg:grid lg:grid-cols-2">
@@ -79,7 +88,7 @@ export default function ReservationTableOnlyPage({
                 )}
                 <div className="flex flex-col md:flex-row justify-center items-center gap-2">
                   <div className="grid gap-2 w-full">
-                    <Label htmlFor="reservationDate">reservationDate</Label>
+                    <Label htmlFor="reservationDate">Reservation Date</Label>
                     <Input
                       id="reservationDate"
                       name="reservationDate"
@@ -89,7 +98,7 @@ export default function ReservationTableOnlyPage({
                     />
                   </div>
                   <div className="grid gap-2 w-full">
-                    <Label htmlFor="reservationTime">reservationTime</Label>
+                    <Label htmlFor="reservationTime">Reservation Time</Label>
                     <Input
                       id="reservationTime"
                       name="reservationTime"

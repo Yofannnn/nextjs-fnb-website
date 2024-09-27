@@ -18,7 +18,7 @@ export async function POST(request: Request) {
         { status: 422 }
       );
 
-    const link = await createUniqueLink({ id: guestReservation._id });
+    const link = await createUniqueLink({ email });
 
     return new Response(
       JSON.stringify({

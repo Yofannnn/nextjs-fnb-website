@@ -18,8 +18,8 @@ export async function verifyUniqueLink(
     const { payload } = await jwtVerify(token, encodedKey, {
       algorithms: ["HS256"],
     });
-    const { id } = payload as { id?: string };
-    return id || null;
+    const { email } = payload as { email?: string };
+    return email || null;
   } catch (error) {
     return null;
   }
