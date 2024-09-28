@@ -12,7 +12,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -59,19 +58,6 @@ export default function EditProductPage() {
     getProduct();
     if (state.success) router.back();
   }, [id, router, state.success]);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setProduct((prevProduct) => {
-      if (!prevProduct) return;
-      return {
-        ...prevProduct,
-        [name]: value,
-      };
-    });
-  };
 
   const handleCategoryChange = (value: string) => {
     setProduct((prevProduct) => {
@@ -162,7 +148,7 @@ export default function EditProductPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
               <div className="grid auto-rows-max items-start gap-4 lg:col-span-2 lg:gap-8">
-                <Card x-chunk="dashboard-07-chunk-0">
+                <Card>
                   <CardHeader>
                     <CardTitle>Product Details</CardTitle>
                     <CardDescription>
@@ -178,8 +164,8 @@ export default function EditProductPage() {
                           name="title"
                           type="text"
                           className="w-full"
-                          value={product?.title}
-                          onChange={handleInputChange}
+                          defaultValue={product?.title}
+                          required
                         />
                       </div>
                       <div className="grid gap-2">
@@ -189,8 +175,8 @@ export default function EditProductPage() {
                           name="price"
                           type="number"
                           className="w-full"
-                          value={product?.price.toString()}
-                          onChange={handleInputChange}
+                          defaultValue={product?.price.toString()}
+                          required
                         />
                       </div>
                       <div className="grid gap-2">
@@ -199,76 +185,67 @@ export default function EditProductPage() {
                           id="description"
                           name="description"
                           className="min-h-48"
-                          value={product?.description}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card x-chunk="dashboard-07-chunk-2">
-                  <CardHeader>
-                    <CardTitle>Product Category</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-6 sm:grid-cols-3">
-                      <div className="grid gap-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Select
-                          name="category"
-                          onValueChange={handleCategoryChange}
-                          value={product?.category}
+                          defaultValue={product?.description}
                           required
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Choose category your product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="food">Food</SelectItem>
-                              <SelectItem value="drink">Drink</SelectItem>
-                              <SelectItem value="snack">Snack</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
               <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
-                <Card x-chunk="dashboard-07-chunk-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Product Category</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-6">
+                      <Select
+                        name="category"
+                        value={product?.category}
+                        onValueChange={handleCategoryChange}
+                        required
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose category your product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectItem value="food">Food</SelectItem>
+                            <SelectItem value="drink">Drink</SelectItem>
+                            <SelectItem value="snack">Snack</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
                   <CardHeader>
                     <CardTitle>Product Status</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-6">
-                      <div className="grid gap-2">
-                        <Label htmlFor="isAvailable">Status</Label>
-                        <Select
-                          name="isAvailable"
-                          onValueChange={handleAvailabilityChange}
-                          value={product?.isAvailable ? "true" : "false"}
-                          required
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Status Product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="true">Available</SelectItem>
-                              <SelectItem value="false">Unavailable</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Select
+                        name="isAvailable"
+                        value={product?.isAvailable.toString()}
+                        onValueChange={handleAvailabilityChange}
+                        required
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Status Product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectItem value="true">Available</SelectItem>
+                            <SelectItem value="false">Unavailable</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </CardContent>
                 </Card>
-                <Card
-                  className="overflow-hidden"
-                  x-chunk="dashboard-07-chunk-4"
-                >
+                <Card className="overflow-hidden">
                   <CardHeader>
                     <CardTitle>Product Images</CardTitle>
                     <CardDescription>

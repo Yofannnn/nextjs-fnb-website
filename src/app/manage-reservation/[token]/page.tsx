@@ -1,5 +1,5 @@
 import CreateUniqueLinkForGuestToManageReservationsPage from "@/components/pages/CreateUniqueLinkForGuestToManageReservations";
-import ManageGuestReservationListPage from "@/components/pages/ManageGuestReservationList";
+import ManageGuestReservationListPage from "@/components/pages/GuestReservationListPage";
 
 async function getReservationList(token: string) {
   try {

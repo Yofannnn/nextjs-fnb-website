@@ -34,7 +34,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { User } from "@/types/user.type";
-import { reservationIncludesDishAction } from "@/actions/reservation.action";
+import { createReservationIncludesDishAction } from "@/actions/reservation.action";
 import { useFormState } from "react-dom";
 import { rupiah } from "@/lib/format-currency";
 import { useRouter } from "next/navigation";
@@ -66,7 +66,7 @@ export default function ReservationIncludeFoodPage({
 
   const downPayment = (total * 50) / 100;
 
-  const useReservationIncludesDish = reservationIncludesDishAction.bind(
+  const useReservationIncludesDish = createReservationIncludesDishAction.bind(
     null,
     user?.email,
     user?.name,

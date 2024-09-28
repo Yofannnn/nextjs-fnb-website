@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  BookOpenCheck,
   Home,
   LayoutDashboard,
   LineChart,
@@ -28,12 +28,15 @@ import {
   PanelLeft,
   Search,
   Settings,
-  ShoppingCart,
   User,
-  Users2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth.action";
+
+const dashboardPath = "/admin-dashboard";
+const dashboardReservationPath = "/admin-dashboard/reservation";
+const dashboardProductsPath = "/admin-dashboard/products";
+const dashboardSettingsPath = "/admin-dashboard/settings";
 
 export default function AdminDashboardLayout({
   children,
@@ -58,10 +61,10 @@ export default function AdminDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/admin/home"
+                    href={dashboardPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/admin/home") &&
+                      pathName === dashboardPath &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
@@ -76,10 +79,10 @@ export default function AdminDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/admin/products"
+                    href={dashboardProductsPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/admin/products") &&
+                      pathName.includes(dashboardProductsPath) &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
@@ -94,36 +97,18 @@ export default function AdminDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/admin/customers"
+                    href={dashboardReservationPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/admin/customers") &&
+                      pathName.includes(dashboardReservationPath) &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
-                    <Users2 className="h-5 w-5" />
-                    <span className="sr-only">Customers</span>
+                    <BookOpenCheck className="h-5 w-5" />
+                    <span className="sr-only">Reservation</span>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Customers</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/dashboard/admin/analytics"
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/admin/analytics") &&
-                        "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
-                    )}
-                  >
-                    <LineChart className="h-5 w-5" />
-                    <span className="sr-only">Analytics</span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Analytics</TooltipContent>
+                <TooltipContent side="right">Reservation</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </nav>
@@ -132,10 +117,10 @@ export default function AdminDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/admin/settings"
+                    href={dashboardSettingsPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/admin/settings") &&
+                      pathName.includes(dashboardSettingsPath) &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
@@ -163,32 +148,20 @@ export default function AdminDashboardLayout({
                     <LayoutDashboard className="h-5 w-5 transition-all group-hover:scale-110" />
                   </div>
                   <Link
-                    href="/dashboard/admin/home"
+                    href={dashboardPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/admin/home") &&
-                        "text-foreground"
+                      pathName === dashboardPath && "text-foreground"
                     )}
                   >
                     <Home className="h-5 w-5" />
                     Dashboard
                   </Link>
                   <Link
-                    href="/dashboard/admin/orders"
+                    href={dashboardProductsPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/admin/orders") &&
-                        "text-foreground"
-                    )}
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    Orders
-                  </Link>
-                  <Link
-                    href="/dashboard/admin/products"
-                    className={cn(
-                      "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/admin/products") &&
+                      pathName.includes(dashboardProductsPath) &&
                         "text-foreground"
                     )}
                   >
@@ -196,21 +169,21 @@ export default function AdminDashboardLayout({
                     Products
                   </Link>
                   <Link
-                    href="/dashboard/admin/customers"
+                    href={dashboardReservationPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/admin/customers") &&
+                      pathName.includes(dashboardReservationPath) &&
                         "text-foreground"
                     )}
                   >
-                    <Users2 className="h-5 w-5" />
-                    Customers
+                    <BookOpenCheck className="h-5 w-5" />
+                    Reservation
                   </Link>
                   <Link
-                    href="/dashboard/admin/settings"
+                    href={dashboardSettingsPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/admin/settings") &&
+                      pathName.includes(dashboardSettingsPath) &&
                         "text-foreground"
                     )}
                   >

@@ -9,6 +9,7 @@ export default async function UserDashboard({
 }>) {
   const session = await verifySession();
   const isAuth = session.isAuth;
-  if (!isAuth) redirect("/login");
+  const user = session.role;
+  if (!isAuth && user !== "user") redirect("/login");
   return <UserDashboardLayout>{children}</UserDashboardLayout>;
 }

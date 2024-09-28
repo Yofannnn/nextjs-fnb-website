@@ -26,7 +26,7 @@ export function toISODate(dateInput: string, timeInput: string): string {
   return dateTime.toISOString();
 }
 
-export function toDateTime(isoString: string) {
+export function toDateTime(isoString: string | Date) {
   const dateTime = new Date(isoString);
   const date = dateTime.toISOString().split("T")[0];
   const time = dateTime.toTimeString().slice(0, 5);

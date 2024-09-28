@@ -13,6 +13,7 @@ export async function addProduct(
   const price = Number(formData.get("price"));
   const description = formData.get("description");
   const category = formData.get("category");
+  const isAvailable = formData.get("isAvailable") === "true" ? true : false;
   const image = formData.get("image") as File;
   const imageTitle = `${title?.toString().split("-")}-${new Date().getTime()}`;
 
@@ -21,6 +22,7 @@ export async function addProduct(
     price,
     description,
     category,
+    isAvailable,
     image,
   });
 

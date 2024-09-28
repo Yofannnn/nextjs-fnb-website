@@ -1,11 +1,25 @@
 import { createUniqueLink } from "@/lib/guest-unique-link";
 import connectToDatabase from "@/lib/mongoose";
+import { findUserByEmail } from "@/services/auth.service";
 import { getReservationByEmail } from "@/services/reservation.service";
 
 export async function POST(request: Request) {
   const { email } = await request.json();
   try {
     await connectToDatabase();
+
+    const isValidMember = await findUserByEmail(email);
+    if (isValidMember)
+      return new Response(
+        JSON.stringify({
+          status: 400,
+          statusText:
+            "You are already a member, Please login to be continue your reservation",
+        }),
+        {
+          status: 400,
+        }
+      );
 
     const guestReservation = await getReservationByEmail(email);
 

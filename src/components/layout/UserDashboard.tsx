@@ -33,6 +33,10 @@ import {
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth.action";
 
+const dashboardPath = "/dashboard";
+const dashboardReservationPath = "/dashboard/reservation";
+const dashboardSettingsPath = "/dashboard/settings";
+
 export default function UserDashboardLayout({
   children,
 }: Readonly<{
@@ -56,10 +60,10 @@ export default function UserDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/user/home"
+                    href={dashboardPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/user/home") &&
+                      pathName === dashboardPath &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
@@ -74,10 +78,10 @@ export default function UserDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/user/reservation"
+                    href={dashboardReservationPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/user/reservation") &&
+                      pathName.includes(dashboardReservationPath) &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
@@ -94,10 +98,10 @@ export default function UserDashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/dashboard/user/settings"
+                    href={dashboardSettingsPath}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                      pathName.includes("/dashboard/user/settings") &&
+                      pathName.includes(dashboardSettingsPath) &&
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
@@ -125,21 +129,20 @@ export default function UserDashboardLayout({
                     <LayoutDashboard className="h-5 w-5 transition-all group-hover:scale-110" />
                   </div>
                   <Link
-                    href="/dashboard/user/home"
+                    href={dashboardPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/user/home") &&
-                        "text-foreground"
+                      pathName === dashboardPath && "text-foreground"
                     )}
                   >
                     <Home className="h-5 w-5" />
                     Dashboard
                   </Link>
                   <Link
-                    href="/dashboard/user/reservation"
+                    href={dashboardReservationPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/user/reservation") &&
+                      pathName.includes(dashboardReservationPath) &&
                         "text-foreground"
                     )}
                   >
@@ -147,10 +150,10 @@ export default function UserDashboardLayout({
                     Reservation
                   </Link>
                   <Link
-                    href="/dashboard/user/settings"
+                    href={dashboardSettingsPath}
                     className={cn(
                       "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathName.includes("/dashboard/user/settings") &&
+                      pathName.includes(dashboardSettingsPath) &&
                         "text-foreground"
                     )}
                   >
@@ -193,7 +196,7 @@ export default function UserDashboardLayout({
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => router.push("/dashboard/user/settings")}
+                  onClick={() => router.push(dashboardSettingsPath)}
                 >
                   Settings
                 </DropdownMenuItem>

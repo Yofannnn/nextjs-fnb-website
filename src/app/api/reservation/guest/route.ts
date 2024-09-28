@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
-  const id = searchParams.get("id");
+  const reservationId = searchParams.get("reservationId");
   const email = await verifyUniqueLink(token ?? "");
   const body = await request.json();
 
@@ -75,7 +75,7 @@ export async function PUT(request: Request) {
       { status: 401 }
     );
 
-  if (!id)
+  if (!reservationId)
     return new Response(
       JSON.stringify({ status: 400, statusText: "Invalid ID" }),
       { status: 400 }
@@ -84,14 +84,14 @@ export async function PUT(request: Request) {
   try {
     await connectToDatabase();
 
-    const isValidEmail = await getReservationByEmail(email);
-    if (!isValidEmail)
+    const isValidGuest = await getReservationByEmail(email);
+    if (!isValidGuest)
       return new Response(
         JSON.stringify({ status: 404, statusText: "Not Found" }),
         { status: 404 }
       );
 
-    const updatedReservation = await updateReservationById(id, body);
+    const updatedReservation = await updateReservationById(reservationId, body);
     if (!updatedReservation)
       return new Response(
         JSON.stringify({

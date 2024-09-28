@@ -58,24 +58,28 @@ import { useFormState } from "react-dom";
 import {
   cancelReservationAction,
   pendingReservationAction,
-  updateReservationTableOnlyAction,
+  updateReservationAction,
 } from "@/actions/reservation.action";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { rupiah } from "@/lib/format-currency";
 
-export default function GuestReservationDetailsPage({
+export default function MemberReservationDetailsPage({
+  isMember,
+  userId,
   reservation,
 }: {
+  isMember: boolean;
+  userId: string;
   reservation: Reservation;
 }) {
   const [isFormOpen, setIsFormOpen] = useState<
-    "reschedule" | "cancel" | "pending" | ""
+    "update" | "cancel" | "pending" | ""
   >("");
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-3 xl:grid-cols-3 my-3 md:my-8">
       <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-        <Card className="overflow-hidden" x-chunk="dashboard-05-chunk-4">
+        <Card className="overflow-hidden">
           <CardHeader className="flex flex-row justify-between items-start bg-muted/50">
             <div className="grid gap-0.5">
               <CardTitle className="group flex items-center gap-2 text-sm md:text-lg">
@@ -196,16 +200,24 @@ export default function GuestReservationDetailsPage({
         </Card>
       </div>
       <div className="grid gap-4">
-        <RescheduleReservationComponent
+        <UpdateReservationComponent
+          isMember={isMember}
+          userId={userId}
           reservation={reservation}
           isFormOpen={isFormOpen}
           setIsFormOpen={setIsFormOpen}
         />
         <PendingReservationComponent
+          isMember={isMember}
+          userId={userId}
+          reservationId={reservation._id}
           isFormOpen={isFormOpen}
           setIsFormOpen={setIsFormOpen}
         />
         <CancelReservationComponent
+          isMember={isMember}
+          userId={userId}
+          reservationId={reservation._id}
           isFormOpen={isFormOpen}
           setIsFormOpen={setIsFormOpen}
         />
@@ -214,23 +226,25 @@ export default function GuestReservationDetailsPage({
   );
 }
 
-function RescheduleReservationComponent({
+function UpdateReservationComponent({
+  isMember,
+  userId,
   reservation,
   isFormOpen,
   setIsFormOpen,
 }: {
+  isMember: boolean;
+  userId: string;
   reservation: Reservation;
-  isFormOpen: "reschedule" | "cancel" | "pending" | "";
-  setIsFormOpen: Dispatch<
-    SetStateAction<"reschedule" | "cancel" | "pending" | "">
-  >;
+  isFormOpen: "update" | "cancel" | "pending" | "";
+  setIsFormOpen: Dispatch<SetStateAction<"update" | "cancel" | "pending" | "">>;
 }) {
-  const { token, id } = useParams<{ token: string; id: string }>();
-  const useUpdateReservation = updateReservationTableOnlyAction.bind(
-    null,
-    token,
-    id
-  );
+  const useUpdateReservation = updateReservationAction.bind(null, {
+    isMember,
+    userId,
+    reservationId: reservation._id,
+    bookedMenus: reservation.menus ? reservation.menus : undefined,
+  });
   const [state, action] = useFormState(useUpdateReservation, {});
   const router = useRouter();
 
@@ -257,14 +271,14 @@ function RescheduleReservationComponent({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setIsFormOpen("reschedule")}
+              onClick={() => setIsFormOpen("update")}
             >
               Reschedule Reservation
             </Button>
           </div>
-          {isFormOpen === "reschedule" && (
+          {isFormOpen === "update" && (
             <div className="mt-7">
-              <form id="reschedule" action={action}>
+              <form id="update" action={action}>
                 <div className="mb-6">
                   <h1 className="text-sm font-bold text-center md:text-start">
                     Reservation
@@ -384,16 +398,23 @@ function RescheduleReservationComponent({
 }
 
 function CancelReservationComponent({
+  isMember,
+  userId,
+  reservationId,
   isFormOpen,
   setIsFormOpen,
 }: {
-  isFormOpen: "reschedule" | "cancel" | "pending" | "";
-  setIsFormOpen: Dispatch<
-    SetStateAction<"reschedule" | "cancel" | "pending" | "">
-  >;
+  isMember: boolean;
+  userId: string;
+  reservationId: string;
+  isFormOpen: "update" | "cancel" | "pending" | "";
+  setIsFormOpen: Dispatch<SetStateAction<"update" | "cancel" | "pending" | "">>;
 }) {
-  const { token, id } = useParams<{ token: string; id: string }>();
-  const useCancelReservation = cancelReservationAction.bind(null, token, id);
+  const useCancelReservation = cancelReservationAction.bind(null, {
+    isMember,
+    userId,
+    reservationId,
+  });
   const [state, action] = useFormState(useCancelReservation, {});
   const router = useRouter();
 
@@ -470,16 +491,23 @@ function CancelReservationComponent({
 }
 
 function PendingReservationComponent({
+  isMember,
+  userId,
+  reservationId,
   isFormOpen,
   setIsFormOpen,
 }: {
-  isFormOpen: "reschedule" | "cancel" | "pending" | "";
-  setIsFormOpen: Dispatch<
-    SetStateAction<"reschedule" | "cancel" | "pending" | "">
-  >;
+  isMember: boolean;
+  userId: string;
+  reservationId: string;
+  isFormOpen: "update" | "cancel" | "pending" | "";
+  setIsFormOpen: Dispatch<SetStateAction<"update" | "cancel" | "pending" | "">>;
 }) {
-  const { token, id } = useParams<{ token: string; id: string }>();
-  const useCancelReservation = pendingReservationAction.bind(null, token, id);
+  const useCancelReservation = pendingReservationAction.bind(null, {
+    isMember,
+    userId,
+    reservationId,
+  });
   const [state, action] = useFormState(useCancelReservation, {});
   const router = useRouter();
 
@@ -556,7 +584,7 @@ function PendingReservationComponent({
 function AlertDialogComponent({
   isFormOpen,
 }: {
-  isFormOpen: "reschedule" | "cancel" | "pending" | "";
+  isFormOpen: "update" | "cancel" | "pending" | "";
 }) {
   const capitalized = isFormOpen
     .split("")
@@ -568,7 +596,7 @@ function AlertDialogComponent({
       <AlertDialogTrigger asChild>
         <Button
           size="sm"
-          variant={isFormOpen === "reschedule" ? "default" : "destructive"}
+          variant={isFormOpen === "update" ? "default" : "destructive"}
           className="w-full"
         >
           {capitalized} Reservation

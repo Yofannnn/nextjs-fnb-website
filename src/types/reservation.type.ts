@@ -1,4 +1,4 @@
-export enum SeatingPreference {
+enum SeatingPreference {
   Indoor = "indoor",
   Outdoor = "outdoor",
 }

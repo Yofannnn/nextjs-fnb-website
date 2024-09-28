@@ -23,6 +23,7 @@ export const ProductSchema = z.object({
     .min(2, { message: "Category must be at least 2 characters long." })
     .regex(/^(?!\s*$).+/, { message: "Category cant be only space" })
     .trim(),
+  isAvailable: z.boolean(),
   image: z
     .instanceof(File)
     .refine((file) => file.size <= MAX_FILE_SIZE, {

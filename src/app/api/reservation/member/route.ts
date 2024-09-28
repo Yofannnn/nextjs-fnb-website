@@ -1,9 +1,10 @@
 import connectToDatabase from "@/lib/mongoose";
-import { findUserByEmail } from "@/services/auth.service";
+import { findUserByEmail, findUserById } from "@/services/auth.service";
 import {
   createReservationList,
   getReservationByEmail,
   getReservationById,
+  updateReservationById,
 } from "@/services/reservation.service";
 
 export async function POST(request: Request) {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
 
-    const isValidMember = await findUserByEmail(body.email);
+    const isValidMember = await findUserByEmail(body.customerEmail);
     if (!isValidMember)
       return new Response(
         JSON.stringify({
@@ -21,7 +22,8 @@ export async function POST(request: Request) {
         { status: 404 }
       );
 
-    const newReservation = await createReservationList(body);
+    const payload = { ...body, reservationStatus: "confirmed" };
+    const newReservation = await createReservationList(payload);
 
     if (!newReservation)
       return new Response(
@@ -50,16 +52,101 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function PUT(request: Request) {
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const email = searchParams.get("email");
+  const userId = searchParams.get("memberId");
+  const reservationId = searchParams.get("reservationId");
+  const body = await request.json();
+
+  if (!userId)
+    return new Response(
+      JSON.stringify({
+        status: 403,
+        statusText: "Params memberId is require.",
+      }),
+      { status: 403 }
+    );
+
+  if (!reservationId)
+    return new Response(
+      JSON.stringify({
+        status: 403,
+        statusText: "Params reservationId is require.",
+      }),
+      { status: 403 }
+    );
 
   try {
     await connectToDatabase();
 
-    if (id) {
-      const reservation = await getReservationById(id);
+    const isValidMember = await findUserById(userId);
+    if (!isValidMember)
+      return new Response(
+        JSON.stringify({
+          status: 404,
+          statusText: "You are not Member, please register to become member",
+        }),
+        { status: 404 }
+      );
+
+    const updatedReservation = await updateReservationById(reservationId, body);
+    if (!updatedReservation)
+      return new Response(
+        JSON.stringify({
+          status: 422,
+          statusText: "Failed to update reservation.",
+        }),
+        { status: 422 }
+      );
+
+    return new Response(
+      JSON.stringify({
+        status: 201,
+        statusText: "Success to update reservation.",
+      }),
+      { status: 201 }
+    );
+  } catch (error: any) {
+    if (!reservationId)
+      return new Response(
+        JSON.stringify({
+          status: 500,
+          statusText: error.message,
+        }),
+        { status: 500 }
+      );
+  }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get("userId");
+  const reservationId = searchParams.get("reservationId");
+
+  if (!userId)
+    return new Response(
+      JSON.stringify({
+        status: 422,
+        statusText: "Param userId was require",
+      }),
+      { status: 422 }
+    );
+
+  try {
+    await connectToDatabase();
+
+    const isValidMember = await findUserById(userId);
+    if (!isValidMember)
+      return new Response(
+        JSON.stringify({
+          status: 404,
+          statusText: "Sorry you are not a member.",
+        }),
+        { status: 404 }
+      );
+
+    if (reservationId) {
+      const reservation = await getReservationById(reservationId);
       return !reservation
         ? new Response(
             JSON.stringify({
@@ -78,7 +165,9 @@ export async function GET(request: Request) {
           );
     }
 
-    const memberReservationList = await getReservationByEmail(email ?? "");
+    const memberReservationList = await getReservationByEmail(
+      isValidMember.email
+    );
 
     if (!memberReservationList)
       return new Response(

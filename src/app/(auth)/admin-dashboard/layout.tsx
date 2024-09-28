@@ -9,7 +9,7 @@ export default async function AdminDashboard({
 }>) {
   const session = await verifySession();
   const isAuth = session.isAuth;
-  if (!isAuth) redirect("/login");
-
+  const isAdmin = session.role === "admin";
+  if (!isAuth && !isAdmin) redirect("/dashboard");
   return <AdminDashboardLayout>{children}</AdminDashboardLayout>;
 }

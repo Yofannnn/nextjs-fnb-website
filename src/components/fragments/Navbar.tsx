@@ -10,7 +10,7 @@ export default function Navbar() {
     .map((item) => item.quantity)
     .reduce((acc, cur) => acc + cur, 0);
 
-  const paths = ["/login", "/register", "/dashboard"];
+  const paths = ["/login", "/register", "/dashboard", "/admin-dashboard"];
   const pathName = usePathname();
   const shouldNotRenderNavbar = paths.some((path) => pathName.startsWith(path));
 

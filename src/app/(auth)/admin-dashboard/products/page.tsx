@@ -66,6 +66,20 @@ export default function DashboardProduct() {
     getProducts();
   }, []);
 
+  const [filterByAvailability, setFilterByAvailability] = useState<
+    "available" | "unavailable" | ""
+  >("");
+
+  const filteredProducts = products.filter((product) => {
+    if (filterByAvailability === "available") {
+      return product.isAvailable === true;
+    }
+    if (filterByAvailability === "unavailable") {
+      return product.isAvailable === false;
+    }
+    return product;
+  });
+
   async function handleDeleteProduct(id: string, imageUrl: string) {
     const status = await deleteProduct(id, imageUrl);
     if (status.success) route.refresh();
@@ -88,11 +102,31 @@ export default function DashboardProduct() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Filter by</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem>Available</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Unavailable</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  onClick={() => setFilterByAvailability("")}
+                  checked={filterByAvailability === ""}
+                >
+                  All Products
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  onClick={() => setFilterByAvailability("available")}
+                  checked={filterByAvailability === "available"}
+                >
+                  Available
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  onClick={() => setFilterByAvailability("unavailable")}
+                  checked={filterByAvailability === "unavailable"}
+                >
+                  Unavailable
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem>Food</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Snack</DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Link href="/dashboard/admin/products/add-product">
+            <Link href="/admin-dashboard/products/add-product">
               <Button size="sm" className="h-7 gap-1">
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -117,13 +151,13 @@ export default function DashboardProduct() {
                     <span className="sr-only">Image</span>
                   </TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Price</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Price</TableHead>
                   <TableHead className="hidden md:table-cell">
-                    Total Sales
+                    Category
                   </TableHead>
                   <TableHead className="hidden md:table-cell">
-                    Created at
+                    Total Sales
                   </TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -131,7 +165,7 @@ export default function DashboardProduct() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product, i) => (
+                {filteredProducts.map((product, i) => (
                   <TableRow key={i}>
                     <TableCell className="hidden sm:table-cell">
                       <Image
@@ -145,15 +179,26 @@ export default function DashboardProduct() {
                     <TableCell className="font-medium">
                       {product.title}
                     </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {rupiah.format(product.price)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {product.isAvailable ? "Available" : "Unavailable"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{rupiah.format(product.price)}</TableCell>
-                    <TableCell className="hidden md:table-cell">25</TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {product.createdAt.toString()}
+                      <Badge variant="outline">
+                        {product.category
+                          .split("")
+                          .map((text, i) =>
+                            i === 0 ? text.toUpperCase() : text
+                          )
+                          .join("")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {product.totalSales}
                     </TableCell>
                     <TableCell>
                       <AlertDialog>
@@ -173,7 +218,7 @@ export default function DashboardProduct() {
                             <DropdownMenuItem
                               onClick={() =>
                                 route.push(
-                                  `/dashboard/admin/products/edit-product?id=${product._id}`
+                                  `/admin-dashboard/products/edit-product?id=${product._id}`
                                 )
                               }
                             >
@@ -195,7 +240,7 @@ export default function DashboardProduct() {
                               This action cannot be undone. This will
                               permanently delete{" "}
                               <strong>{product.title}</strong> and remove from
-                              servers.
+                              Database.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -219,7 +264,7 @@ export default function DashboardProduct() {
           </CardContent>
           <CardFooter>
             <div className="text-xs text-muted-foreground">
-              Showing <strong>{products.length}</strong> of{" "}
+              Showing <strong>{filteredProducts.length}</strong> of{" "}
               <strong>{products.length}</strong> products
             </div>
           </CardFooter>

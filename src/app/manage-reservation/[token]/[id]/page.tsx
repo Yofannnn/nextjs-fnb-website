@@ -1,4 +1,4 @@
-import GuestReservationDetailsPage from "@/components/pages/GuestReservationDetails";
+import GuestReservationDetailsPage from "@/components/pages/GuestReservationDetailsPage";
 
 async function getReservationDetails(token: string, id: string) {
   try {

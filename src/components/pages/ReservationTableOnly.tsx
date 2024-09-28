@@ -1,6 +1,6 @@
 "use client";
 
-import { reservationTableOnlyAction } from "@/actions/reservation.action";
+import { createReservationTableOnlyAction } from "@/actions/reservation.action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { User } from "@/types/user.type";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,14 +20,16 @@ import { useEffect } from "react";
 import { useFormState } from "react-dom";
 
 export default function ReservationTableOnlyPage({
-  user,
+  memberName,
+  memberEmail,
 }: {
-  user: User | undefined;
+  memberName: string | undefined;
+  memberEmail: string | undefined;
 }) {
-  const bindReservationTableOnlyAction = reservationTableOnlyAction.bind(
+  const bindReservationTableOnlyAction = createReservationTableOnlyAction.bind(
     null,
-    user?.email,
-    user?.name
+    memberEmail,
+    memberName
   );
   const [state, action] = useFormState(bindReservationTableOnlyAction, {});
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function ReservationTableOnlyPage({
                 </p>
               </div>
               <div className="grid gap-4">
-                {!user?.role && (
+                {!memberEmail && (
                   <>
                     <div className="grid gap-2">
                       <div className="flex items-center">

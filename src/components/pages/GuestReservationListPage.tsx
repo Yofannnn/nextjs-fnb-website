@@ -32,7 +32,7 @@ import { formatDate, toDateTime } from "@/lib/format-date";
 import { rupiah } from "@/lib/format-currency";
 import { useState } from "react";
 
-export default function ManageGuestReservationListPage({
+export default function GuestReservationListPage({
   token,
   reservationList,
 }: {

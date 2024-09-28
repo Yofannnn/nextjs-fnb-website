@@ -3,6 +3,7 @@ import { getUser } from "@/lib/dal";
 
 export default async function ReservationTableOnly() {
   const user = await getUser();
-  const userData = user ? JSON.parse(JSON.stringify(user)) : undefined;
-  return <ReservationTableOnlyPage user={userData} />;
+  return (
+    <ReservationTableOnlyPage memberName={user.name} memberEmail={user.email} />
+  );
 }

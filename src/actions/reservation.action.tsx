@@ -3,7 +3,7 @@ import { formatError } from "@/lib/format-error";
 import { ActionResult } from "@/types/action-result.type";
 import { ReservationSchema } from "@/validations/reservation.validation";
 
-export async function reservationTableOnlyAction(
+export async function createReservationTableOnlyAction(
   authUserEmail: string | undefined,
   authUserName: string | undefined,
   _: ActionResult,
@@ -43,7 +43,7 @@ export async function reservationTableOnlyAction(
     const resData = await res.json();
     return resData.link
       ? { success: true, data: { link: `/manage-reservation/${resData.link}` } }
-      : { success: true, data: { link: `/dashboard/user/reservation` } };
+      : { success: true, data: { link: `/dashboard/reservation` } };
   } catch (error: any) {
     return { success: false, errors: formatError(error.message) };
   }
@@ -54,7 +54,7 @@ interface BookedMenus {
   quantity: number;
 }
 
-export async function reservationIncludesDishAction(
+export async function createReservationIncludesDishAction(
   authUserEmail: string | undefined,
   authUserName: string | undefined,
   bookedMenus: BookedMenus[],
@@ -98,29 +98,85 @@ export async function reservationIncludesDishAction(
     const resData = await res.json();
     return resData.link
       ? { success: true, data: { link: `/manage-reservation/${resData.link}` } }
-      : { success: true, data: { link: `/dashboard/user/reservation` } };
+      : { success: true, data: { link: `/dashboard/reservation` } };
   } catch (error: any) {
     return { success: false, errors: error.message };
   }
 }
 
-export async function updateReservationTableOnlyAction(
-  token: string,
-  reservationId: string,
+export async function updateReservationAction(
+  {
+    isMember,
+    userId,
+    token,
+    reservationId,
+    bookedMenus,
+  }: {
+    isMember: boolean;
+    userId?: string | undefined;
+    token?: string | undefined;
+    reservationId: string;
+    bookedMenus?: BookedMenus[] | undefined;
+  },
   _: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const rawFormData = Object.fromEntries(formData.entries());
+  const dateInput = formData.get("reservationDate") as string;
+  const timeInput = formData.get("reservationTime") as string;
+  const reservationDate = toISODate(dateInput, timeInput);
+  const dataBody = {
+    reservationDate,
+    partySize: Number(formData.get("partySize")),
+    seatingPreference: formData.get("seatingPreference"),
+    specialRequest: formData.get("specialRequest"),
+    menus: bookedMenus || [],
+  };
+
+  const endpoint = `/api/reservation/${isMember ? "member" : "guest"}?${
+    isMember ? "memberId" : "token"
+  }=${isMember ? userId : token}&reservationId=${reservationId}`;
 
   try {
-    const res = await fetch(
-      `/api/reservation/guest?token=${token}&id=${reservationId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(rawFormData),
-      }
-    );
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dataBody),
+    });
+    if (!res.ok) throw new Error(res.statusText);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, errors: error.message };
+  }
+}
+
+export async function cancelReservationAction(
+  {
+    isMember,
+    userId,
+    token,
+    reservationId,
+  }: {
+    isMember: boolean;
+    userId?: string | undefined;
+    token?: string | undefined;
+    reservationId: string;
+  },
+  _: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const endpoint = `/api/reservation/${isMember ? "member" : "guest"}?${
+    isMember ? "memberId" : "token"
+  }=${isMember ? userId : token}&reservationId=${reservationId}`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reservationStatus: "cancelled",
+        reasonCancellation: formData.get("reasonCancellation"),
+      }),
+    });
     if (!res.ok) throw new Error(res.statusText);
     return { success: true };
   } catch (error: any) {
@@ -128,53 +184,34 @@ export async function updateReservationTableOnlyAction(
   }
 }
 
-// actually its just for guest
-export async function cancelReservationAction( //===== guest =====
-  token: string,
-  reservationId: string,
+export async function pendingReservationAction(
+  {
+    isMember,
+    userId,
+    token,
+    reservationId,
+  }: {
+    isMember: boolean;
+    userId?: string | undefined;
+    token?: string | undefined;
+    reservationId: string;
+  },
   _: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  try {
-    const res = await fetch(
-      `/api/reservation/guest?token=${token}&id=${reservationId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reservationStatus: "cancelled",
-          reasonCancellation: formData.get("reasonCancellation"),
-        }),
-      }
-    );
-    if (!res.ok) throw new Error(res.statusText);
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, errors: formatError(error.message) };
-  }
-}
-
-// actually its just for guest
-export async function pendingReservationAction( //=== guest ====
-  token: string,
-  reservationId: string,
-  _: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  console.log("reason pending : ", formData.get("reasonPending"));
+  const endpoint = `/api/reservation/${isMember ? "member" : "guest"}?${
+    isMember ? "memberId" : "token"
+  }=${isMember ? userId : token}&reservationId=${reservationId}`;
 
   try {
-    const res = await fetch(
-      `/api/reservation/guest?token=${token}&id=${reservationId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reservationStatus: "pending",
-          reasonCancellation: formData.get("reasonCancellation"),
-        }),
-      }
-    );
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reservationStatus: "pending",
+        reasonCancellation: formData.get("reasonCancellation"),
+      }),
+    });
     if (!res.ok) throw new Error(res.statusText);
     return { success: true };
   } catch (error: any) {
