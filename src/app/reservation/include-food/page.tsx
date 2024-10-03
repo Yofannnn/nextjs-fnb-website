@@ -1,7 +1,9 @@
 import ReservationIncludeFoodPage from "@/components/pages/ReservationIncludeFoodPage";
-import { verifySession } from "@/lib/dal";
+import { getUser } from "@/lib/dal";
 
 export default async function ReservationIncludeFood() {
-  const session = await verifySession();
-  return <ReservationIncludeFoodPage isAuth={session.isAuth} />;
+  const { user } = await getUser();
+  return (
+    <ReservationIncludeFoodPage userName={user?.name} userEmail={user?.email} />
+  );
 }

@@ -388,7 +388,7 @@ export default async function Home() {
               />
               <BlurFade delay={0.4} blur="0px">
                 <Link
-                  href="/menu"
+                  href="/register"
                   className="inline-block px-9 lg:px-10 py-2 rounded-full font-bold border-2 border-foreground bg-foreground text-background hover:bg-transparent hover:text-foreground transition-all duration-500"
                 >
                   Sign Up

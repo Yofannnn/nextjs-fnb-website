@@ -13,9 +13,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormState } from "react-dom";
 import { registerAction } from "@/actions/auth.action";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
-export default function RegisterPage() {
+export default function RegisterPage({ isAuth }: { isAuth: boolean }) {
   const [state, action] = useFormState(registerAction, {});
+  const searchParams = useSearchParams();
+  const getRedirect = searchParams.get("redirect");
+  const redirectTo = getRedirect?.split("_").join("/");
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuth) router.push("/dashboard");
+  }, [isAuth, router]);
+
+  useEffect(() => {
+    if (state.success) {
+      router.push(redirectTo ? `/${redirectTo}` : "/");
+    }
+  }, [redirectTo, router, state.success]);
 
   return (
     <div className="w-full min-h-svh flex justify-center items-center px-2 py-10">
@@ -70,7 +86,10 @@ export default function RegisterPage() {
           </form>
           <div className="mt-6 text-center text-sm">
             Already have an account?{" "}
-            <Link href="/login" className="underline">
+            <Link
+              href={getRedirect ? `/login?redirect=${getRedirect}` : "/login"}
+              className="underline"
+            >
               Sign in
             </Link>
           </div>

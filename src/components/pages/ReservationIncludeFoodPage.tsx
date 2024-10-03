@@ -33,7 +33,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import { User } from "@/types/user.type";
 import { createReservationIncludesDishAction } from "@/actions/reservation.action";
 import { useFormState } from "react-dom";
 import { rupiah } from "@/lib/format-currency";
@@ -48,9 +47,11 @@ interface MenuForReservation {
 }
 
 export default function ReservationIncludeFoodPage({
-  user,
+  userName,
+  userEmail,
 }: {
-  user: User | undefined;
+  userName: string | undefined;
+  userEmail: string | undefined;
 }) {
   const [menusForReservation, setMenusForReservation] = useState<
     MenuForReservation[]
@@ -68,8 +69,8 @@ export default function ReservationIncludeFoodPage({
 
   const useReservationIncludesDish = createReservationIncludesDishAction.bind(
     null,
-    user?.email,
-    user?.name,
+    userEmail,
+    userName,
     bookedMenus,
     downPayment,
     total
@@ -149,13 +150,13 @@ export default function ReservationIncludeFoodPage({
             <CardContent>
               <form action={action}>
                 <div className="grid gap-4">
-                  {!user?.role && (
+                  {!userEmail && (
                     <>
                       <div className="grid gap-2">
                         <div className="flex items-center">
                           <Label htmlFor="customerEmail">Email</Label>
                           <Link
-                            href="/register"
+                            href="/register?redirect=reservation_include-food"
                             className="ml-auto inline-block text-sm underline"
                           >
                             Create Member Pass?

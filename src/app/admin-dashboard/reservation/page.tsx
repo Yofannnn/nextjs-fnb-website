@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Copy,
   CreditCard,
-  File,
   ListFilter,
   MoreVertical,
 } from "lucide-react";
@@ -43,21 +42,26 @@ import { formatDate, toDateTime } from "@/lib/format-date";
 import { rupiah } from "@/lib/format-currency";
 
 export default function UserDashboardReservation() {
-  const [reservationList, setReservationList] = useState<Reservation[]>([]);
+  const [reservationList, setReservationList] = useState<{
+    isLoading: boolean;
+    data?: Reservation[] | undefined;
+    error?: string | undefined;
+  }>({ isLoading: true, data: undefined, error: undefined });
   const [displayReservationDetails, setDisplayReservationDetails] =
     useState<Reservation | null>(null);
   const [filterByReservationStatus, setFilterByReservationStatus] = useState<
     "confirmed" | "cancelled" | "pending" | ""
   >("");
   const sortedReservationList = filterByReservationStatus
-    ? reservationList.filter(
+    ? reservationList.data?.filter(
         (reservation) =>
           reservation.reservationStatus === filterByReservationStatus
       )
-    : reservationList;
-  const indexDisplayReservationDetails = reservationList.findIndex(
-    (reservation) => reservation._id === displayReservationDetails?._id
-  );
+    : reservationList.data;
+  const indexDisplayReservationDetails =
+    reservationList.data?.findIndex(
+      (reservation) => reservation._id === displayReservationDetails?._id
+    ) || 0;
 
   useEffect(() => {
     async function getReservationList() {
@@ -68,9 +72,12 @@ export default function UserDashboardReservation() {
         });
         if (!res.ok) throw new Error(res.statusText);
         const { data } = await res.json();
-        setReservationList(data);
+        setReservationList({ isLoading: false, data });
       } catch (error: any) {
-        console.log(error.message);
+        setReservationList({
+          isLoading: false,
+          error: error.message,
+        });
       }
     }
 
@@ -123,10 +130,6 @@ export default function UserDashboardReservation() {
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button size="sm" variant="outline" className="h-7 gap-1 text-sm">
-              <File className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only">Export</span>
-            </Button>
           </div>
           <Card>
             <CardHeader className="px-7">
@@ -134,55 +137,71 @@ export default function UserDashboardReservation() {
               <CardDescription>Recent orders from your store.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="hidden sm:table-cell">Type</TableHead>
-                    <TableHead className="hidden sm:table-cell">
-                      Status
-                    </TableHead>
-                    <TableHead className="hidden md:table-cell">Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedReservationList.map((reservation, i) => (
-                    <TableRow
-                      key={i}
-                      className={
-                        reservation._id === displayReservationDetails?._id
-                          ? "bg-accent"
-                          : ""
-                      }
-                      onClick={() => setDisplayReservationDetails(reservation)}
-                    >
-                      <TableCell>
-                        <div className="font-medium">
-                          {reservation.customerName}
-                        </div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          {reservation.customerEmail}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge className="text-xs" variant="secondary">
-                          {reservation.reservationStatus}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        2023-06-23
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {rupiah.format(reservation.total)}
-                      </TableCell>
+              {reservationList.isLoading ? (
+                <div className="w-full flex justify-center items-center p-5">
+                  <h1 className="text-2xl">Loading...</h1>
+                </div>
+              ) : reservationList.data ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        Type
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        Status
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Date
+                      </TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedReservationList?.map((reservation, i) => (
+                      <TableRow
+                        key={i}
+                        className={
+                          reservation._id === displayReservationDetails?._id
+                            ? "bg-accent"
+                            : ""
+                        }
+                        onClick={() =>
+                          setDisplayReservationDetails(reservation)
+                        }
+                      >
+                        <TableCell>
+                          <div className="font-medium">
+                            {reservation.customerName}
+                          </div>
+                          <div className="hidden text-sm text-muted-foreground md:inline">
+                            {reservation.customerEmail}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          Sale
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge className="text-xs" variant="secondary">
+                            {reservation.reservationStatus}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          2023-06-23
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {rupiah.format(reservation.total)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="w-full flex justify-center items-center p-5">
+                  <h1 className="text-2xl">Error : {reservationList.error}</h1>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -339,7 +358,11 @@ export default function UserDashboardReservation() {
                   className="h-6 w-6"
                   onClick={() =>
                     setDisplayReservationDetails(
-                      reservationList[indexDisplayReservationDetails - 1]
+                      reservationList.data
+                        ? reservationList.data[
+                            indexDisplayReservationDetails - 1
+                          ]
+                        : null
                     )
                   }
                 >
@@ -352,7 +375,11 @@ export default function UserDashboardReservation() {
                   className="h-6 w-6"
                   onClick={() =>
                     setDisplayReservationDetails(
-                      reservationList[indexDisplayReservationDetails + 1]
+                      reservationList.data
+                        ? reservationList.data[
+                            indexDisplayReservationDetails + 1
+                          ]
+                        : null
                     )
                   }
                 >

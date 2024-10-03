@@ -61,7 +61,7 @@ export default function ReservationTableOnlyPage({
                       <div className="flex items-center">
                         <Label htmlFor="customerEmail">Email</Label>
                         <Link
-                          href="/register"
+                          href="/register?redirect=reservation_table-only"
                           className="ml-auto inline-block text-sm underline"
                         >
                           Create Member Pass?

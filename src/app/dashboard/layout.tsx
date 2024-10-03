@@ -7,9 +7,8 @@ export default async function UserDashboard({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await verifySession();
-  const isAuth = session.isAuth;
-  const user = session.role;
-  if (!isAuth && user !== "user") redirect("/login");
+  const { isAuth, role } = await verifySession();
+  if (role === "admin") redirect("/admin-dashboard");
+  if (!isAuth && role !== "user") redirect("/login?redirect=dashboard");
   return <UserDashboardLayout>{children}</UserDashboardLayout>;
 }

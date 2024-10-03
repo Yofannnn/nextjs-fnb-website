@@ -13,9 +13,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "@/actions/auth.action";
 import { useFormState } from "react-dom";
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+export default function LoginPage({ isAuth }: { isAuth: boolean }) {
   const [state, action] = useFormState(loginAction, {});
+  const searchParams = useSearchParams();
+  const getRedirect = searchParams.get("redirect");
+  const redirectTo = getRedirect?.split("_").join("/");
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuth) router.push("/dashboard");
+  }, [isAuth, router]);
+
+  useEffect(() => {
+    if (state.success) {
+      router.push(redirectTo ? `/${redirectTo}` : "/");
+    }
+  }, [redirectTo, router, state.success]);
 
   return (
     <div className="w-full min-h-svh flex justify-center items-center px-2 py-10">
@@ -50,7 +66,12 @@ export default function LoginPage() {
           </form>
           <div className="mt-6 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="underline">
+            <Link
+              href={
+                getRedirect ? `/register?redirect=${getRedirect}` : "/register"
+              }
+              className="underline"
+            >
               Sign up
             </Link>
           </div>

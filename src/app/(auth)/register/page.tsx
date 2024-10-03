@@ -1,8 +1,7 @@
 import RegisterPage from "@/components/pages/RegisterPage";
+import { verifySession } from "@/lib/dal";
 
-export const description =
-  "A sign up form with first name, last name, email and password inside a card. There's an option to sign up with GitHub and a link to login if you already have an account";
-
-export default function Register() {
-  return <RegisterPage />;
+export default async function Register() {
+  const { isAuth } = await verifySession();
+  return <RegisterPage isAuth={isAuth} />;
 }

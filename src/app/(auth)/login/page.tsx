@@ -1,8 +1,7 @@
 import LoginPage from "@/components/pages/LoginPage";
+import { verifySession } from "@/lib/dal";
 
-export const description =
-  "A login form with email and password. There's an option to login with Google and a link to sign up if you don't have an account.";
-
-export default function Login() {
-  return <LoginPage />;
+export default async function Login() {
+  const { isAuth } = await verifySession();
+  return <LoginPage isAuth={isAuth} />;
 }

@@ -44,6 +44,15 @@ export default function UserDashboardLayout({
 }>) {
   const pathName = usePathname();
   const sessionTitle = pathName.split("/").filter((x) => x);
+  const capitalizedTitle = sessionTitle[sessionTitle.length - 1]
+    .split("-")
+    .map((word) =>
+      word
+        .split("")
+        .map((letter, i) => (i === 0 ? letter.toUpperCase() : letter))
+        .join("")
+    )
+    .join(" ");
   const router = useRouter();
 
   const handleClickLogOut = async () => {
@@ -164,7 +173,7 @@ export default function UserDashboardLayout({
               </SheetContent>
             </Sheet>
             <h1 className="hidden md:block md:font-bold md:text-xl">
-              {sessionTitle[sessionTitle.length - 1]}
+              {capitalizedTitle}
             </h1>
             <div className="relative ml-auto flex-1 md:grow-0">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
