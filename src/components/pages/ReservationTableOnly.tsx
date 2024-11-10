@@ -1,6 +1,5 @@
 "use client";
 
-import { createReservationTableOnlyAction } from "@/actions/reservation.action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,39 +12,112 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TransactionSuccess } from "@/types/transaction.type";
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useFormState } from "react-dom";
+import { handleTransactionComplete } from "@/midtrans/init";
 
 export default function ReservationTableOnlyPage({
+  isAuth,
+  memberId,
   memberName,
   memberEmail,
 }: {
+  isAuth: boolean;
+  memberId: string | undefined;
   memberName: string | undefined;
   memberEmail: string | undefined;
 }) {
-  const bindReservationTableOnlyAction = createReservationTableOnlyAction.bind(
-    null,
-    memberEmail,
-    memberName
-  );
-  const [state, action] = useFormState(bindReservationTableOnlyAction, {});
+  // const bindReservationTableOnlyAction = createReservationTableOnlyAction.bind(
+  //   null,
+  //   memberEmail,
+  //   memberName
+  // );
+  // const [state, action] = useFormState(bindReservationTableOnlyAction, {});
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.success) {
-      router.push(state.data.link);
+  // useEffect(() => {
+  //   if (state.success) {
+  //     router.push(state.data.link);
+  //   }
+  // }, [router, state]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const form = new FormData(e.currentTarget);
+    const body = {
+      customerName: isAuth ? memberName : form.get("customerName"),
+      customerEmail: isAuth ? memberEmail : form.get("customerEmail"),
+      reservationDate: new Date(
+        `${form.get("reservationDate")}T${form.get("reservationTime")}`
+      ),
+      partySize: Number(form.get("partySize")),
+      seatingPreference: form.get("seatingPreference"),
+      specialRequest: form.get("specialRequest"),
+      reservationType: "table-only",
+      paymentStatus: "downPayment",
+    };
+
+    try {
+      const response = await fetch(`/api/reservation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.statusText);
+      const { token, guestAccessToken } = result.data;
+
+      window.snap.pay(token, {
+        onSuccess: async function (result: TransactionSuccess) {
+          // fetch buat ngubah payment status, transaksi details
+          await handleTransactionComplete(
+            memberId || guestAccessToken,
+            result.order_id
+          );
+          router.push(
+            isAuth
+              ? `/dashboard/reservation/${result.order_id}`
+              : `/guest/reservation/${guestAccessToken}/${result.order_id}`
+          );
+        },
+        onPending: function (result: any) {
+          console.log(result);
+        },
+        onError: function (result: any) {
+          alert("payment failed!");
+          console.log(result);
+          // display error message with toast and add button in toast to refrest page
+        },
+        onClose: function () {
+          router.push(
+            isAuth
+              ? `/dashboard/transaction`
+              : `/guest/transaction/${guestAccessToken}`
+          );
+        },
+      });
+    } catch (error) {
+      console.error(error);
     }
-  }, [router, state]);
+  };
 
   return (
     <>
+      <Script
+        src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL as string}
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string}
+        strategy="lazyOnload"
+      />
       <div className="w-full min-h-svh lg:grid lg:grid-cols-2">
         <div className="w-full h-full flex items-center justify-center py-12">
           <div className="mx-auto grid p-2 md:p-0 gap-6 w-[350px]">
-            <form action={action}>
+            {/* <form action={action}> */}
+            <form onSubmit={handleSubmit}>
               <div className="mb-6">
                 <h1 className="text-xl font-bold text-center md:text-start">
                   Reservation
@@ -55,7 +127,7 @@ export default function ReservationTableOnlyPage({
                 </p>
               </div>
               <div className="grid gap-4">
-                {!memberEmail && (
+                {!isAuth && (
                   <>
                     <div className="grid gap-2">
                       <div className="flex items-center">

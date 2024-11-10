@@ -3,22 +3,18 @@ import GuestReservationDetailsPage from "@/components/pages/GuestReservationDeta
 async function getReservationDetails(token: string, id: string) {
   try {
     const res = await fetch(
-      `${process.env.BASE_URL}/api/reservation/guest?token=${token}&id=${id}`,
+      `${process.env.BASE_URL}/api/reservation?accessId=${token}&reservationId=${id}`,
+
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       }
     );
-    if (!res.ok) {
-      const errorData = await res.json();
-      return {
-        error: errorData.statusText || "Error fetching reservation data",
-      };
-    }
-    const { data } = await res.json();
-    return data;
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.statusText);
+    return { success: true, data: result.data };
   } catch (error: any) {
-    return error.message;
+    return { success: false, message: error.message };
   }
 }
 
@@ -28,10 +24,9 @@ export default async function ManageReservationsDetails({
   params: { token: string; id: string };
 }) {
   const { token, id } = params;
-  const reservation = await getReservationDetails(token, id);
-
+  const { success, message, data } = await getReservationDetails(token, id);
   // should improve error handling
   // if (reservation.error) return <InputWhenReservationListIsInvalid />;
 
-  return <GuestReservationDetailsPage reservation={reservation} />;
+  return <GuestReservationDetailsPage reservation={data} />;
 }

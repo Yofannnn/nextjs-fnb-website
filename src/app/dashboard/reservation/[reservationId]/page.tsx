@@ -4,17 +4,17 @@ import { verifySession } from "@/lib/dal";
 async function getReservationDetails(userId: string, reservationId: string) {
   try {
     const res = await fetch(
-      `${process.env.BASE_URL}/api/reservation/member?userId=${userId}&reservationId=${reservationId}`,
+      `${process.env.BASE_URL}/api/reservation?accessId=${userId}&reservationId=${reservationId}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       }
     );
-    if (!res.ok) throw new Error(res.statusText);
-    const { data } = await res.json();
-    return data;
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.statusText);
+    return { success: true, data: result.data };
   } catch (error: any) {
-    return { error: error.message };
+    return { success: false, message: error.message };
   }
 }
 
@@ -25,16 +25,17 @@ export default async function MemberReservationDetails({
 }) {
   const { isAuth, userId } = await verifySession();
   const { reservationId } = params;
-  if (!userId) return null;
-  const reservationDetails = await getReservationDetails(
+  const { success, message, data } = await getReservationDetails(
     userId as string,
     reservationId
   );
+
+  if (!userId) return null;
   return (
     <MemberReservationDetailsPage
       isMember={isAuth}
       userId={userId as string}
-      reservation={reservationDetails}
+      reservation={data}
     />
   );
 }

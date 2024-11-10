@@ -2,6 +2,7 @@ import { Schema, model, models } from "mongoose";
 
 const ReservationSchema = new Schema(
   {
+    reservationId: { type: String, required: true },
     customerName: { type: String, required: true },
     customerEmail: { type: String, required: true },
     reservationDate: { type: Date, required: true },
@@ -12,19 +13,26 @@ const ReservationSchema = new Schema(
       required: true,
     },
     specialRequest: { type: String, required: false },
-    tableOnly: { type: Boolean, required: true },
+    reservationType: {
+      type: String,
+      enum: ["table-only", "include-food"],
+      required: true,
+    },
     menus: {
       type: [
         {
-          productId: { type: String, require: true },
-          quantity: { type: Number, require: true },
+          productId: { type: String, required: true },
+          quantity: { type: Number, required: true },
+          price: { type: Number, required: true }, // Price at the time of reservation
         },
       ],
       required: false,
+      default: undefined,
     },
-    downPayment: { type: Number, require: true },
-    discount: { type: Number, require: false },
-    total: { type: Number, require: true },
+    downPayment: { type: Number, required: true },
+    discount: { type: Number, required: false },
+    total: { type: Number, required: true },
+    transactionId: { type: String, required: true },
     paymentStatus: {
       type: String,
       enum: ["downPayment", "paid"],
@@ -32,12 +40,12 @@ const ReservationSchema = new Schema(
     },
     reservationStatus: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled"],
+      enum: ["pending", "confirmed", "rescheduled", "cancelled"],
       required: true,
-      default: "confirmed",
+      default: "pending",
     },
-    reasonCancellation: { type: String, require: false },
-    reasonPending: { type: String, require: false },
+    reasonCancellation: { type: String, required: false },
+    reasonPending: { type: String, required: false },
   },
   {
     timestamps: true,

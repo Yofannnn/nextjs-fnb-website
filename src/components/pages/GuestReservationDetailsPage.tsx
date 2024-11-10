@@ -52,7 +52,7 @@ import {
   SquareArrowOutUpRight,
   TimerReset,
 } from "lucide-react";
-import { Reservation } from "@/types/reservation.type";
+import { Reservation } from "@/types/order.type";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import {
@@ -79,7 +79,7 @@ export default function GuestReservationDetailsPage({
           <CardHeader className="flex flex-row justify-between items-start bg-muted/50">
             <div className="grid gap-0.5">
               <CardTitle className="group flex items-center gap-2 text-sm md:text-lg">
-                Order {reservation._id}
+                Order {reservation.reservationId}
                 <Button
                   size="icon"
                   variant="outline"

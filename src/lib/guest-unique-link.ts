@@ -11,16 +11,28 @@ export async function createUniqueLink(payload: JWTPayload) {
     .sign(encodedKey);
 }
 
-export async function verifyUniqueLink(
-  token: string = ""
-): Promise<string | null> {
+export async function verifyUniqueLink(token: string | null): Promise<{
+  valid: boolean;
+  email: string | null;
+  message: string;
+}> {
   try {
+    if (!token) throw new Error("No token provided");
     const { payload } = await jwtVerify(token, encodedKey, {
       algorithms: ["HS256"],
     });
     const { email } = payload as { email?: string };
-    return email || null;
-  } catch (error) {
-    return null;
+    if (!email) throw new Error("Invalid token");
+    return {
+      valid: true,
+      email,
+      message: "Valid token",
+    };
+  } catch (error: any) {
+    return {
+      valid: false,
+      email: null,
+      message: error.message,
+    };
   }
 }

@@ -11,9 +11,9 @@ interface VerifySession {
 }
 
 interface GetUser {
-  status: "success" | "failed";
-  user?: User | null;
-  error?: string | undefined;
+  success: boolean;
+  user?: User;
+  message?: string;
 }
 
 interface User {
@@ -45,10 +45,15 @@ export const verifySession = cache(async (): Promise<VerifySession> => {
 export const getUser = cache(async (): Promise<GetUser> => {
   const { isAuth, userId } = await verifySession();
   if (!isAuth)
-    return { status: "failed", error: "Please login before get user" };
+    return { success: false, message: "User not authenticated, please login." };
 
   try {
-    const findUser = await findUserById(userId as string);
+    const {
+      success,
+      message,
+      data: findUser,
+    } = await findUserById(userId as string);
+    if (!findUser || !success) throw new Error(message);
     const user: User = {
       _id: findUser._id,
       name: findUser.name,
@@ -58,8 +63,8 @@ export const getUser = cache(async (): Promise<GetUser> => {
       createdAt: findUser.createdAt,
       updatedAt: findUser.updatedAt,
     };
-    return { status: "success", user };
+    return { success: true, user };
   } catch (error: any) {
-    return { status: "failed", error: error.message || "Failed to fetch user" };
+    return { success: false, message: error.message || "Failed to fetch user" };
   }
 });

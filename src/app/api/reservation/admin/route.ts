@@ -6,7 +6,11 @@ export async function GET(request: Request) {
   try {
     await connectToDatabase();
 
-    const reservationList = await getReservationList();
+    const {
+      success,
+      data: reservationList,
+      message,
+    } = await getReservationList();
 
     return new Response(
       JSON.stringify({

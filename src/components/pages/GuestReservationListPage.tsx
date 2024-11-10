@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Reservation } from "@/types/reservation.type";
+import { Reservation } from "@/types/order.type";
 import {
   Table,
   TableBody,
@@ -124,7 +124,7 @@ export default function GuestReservationListPage({
                     className={false ? "bg-accent my-4" : "my-4"}
                     onClick={() =>
                       router.push(
-                        `/manage-reservation/${token}/${reservation._id}`
+                        `/guest/reservation/${token}/${reservation.reservationId}`
                       )
                     }
                   >

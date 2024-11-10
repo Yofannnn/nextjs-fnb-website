@@ -4,22 +4,17 @@ import ManageGuestReservationListPage from "@/components/pages/GuestReservationL
 async function getReservationList(token: string) {
   try {
     const res = await fetch(
-      `${process.env.BASE_URl}/api/reservation/guest?token=${token}`,
+      `${process.env.BASE_URl}/api/reservation?accessId=${token}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       }
     );
-    if (!res.ok) {
-      const errorData = await res.json();
-      return {
-        error: errorData.statusText || "Error fetching reservation data",
-      };
-    }
-    const { data } = await res.json();
-    return data;
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.statusText);
+    return { success: true, data: result.data };
   } catch (error: any) {
-    return { error: error.message };
+    return { success: false, message: error.message };
   }
 }
 
@@ -29,16 +24,11 @@ export default async function ManageReservationsList({
   params: { token: string };
 }) {
   const { token } = params;
-  const reservationInfo = await getReservationList(token);
-
+  const { success, message, data } = await getReservationList(token);
   // should improve the error handling
-  if (reservationInfo.error)
-    return <CreateUniqueLinkForGuestToManageReservationsPage />;
+  if (!success) return <CreateUniqueLinkForGuestToManageReservationsPage />;
 
   return (
-    <ManageGuestReservationListPage
-      token={token}
-      reservationList={reservationInfo || []}
-    />
+    <ManageGuestReservationListPage token={token} reservationList={data} />
   );
 }

@@ -37,6 +37,9 @@ import { createReservationIncludesDishAction } from "@/actions/reservation.actio
 import { useFormState } from "react-dom";
 import { rupiah } from "@/lib/format-currency";
 import { useRouter } from "next/navigation";
+import { TransactionSuccess } from "@/types/transaction.type";
+import { handleTransactionComplete } from "@/midtrans/init";
+import Script from "next/script";
 
 interface MenuForReservation {
   id: string;
@@ -47,18 +50,22 @@ interface MenuForReservation {
 }
 
 export default function ReservationIncludeFoodPage({
-  userName,
-  userEmail,
+  isAuth,
+  memberId,
+  memberName,
+  memberEmail,
 }: {
-  userName: string | undefined;
-  userEmail: string | undefined;
+  isAuth: boolean;
+  memberId: string | undefined;
+  memberName: string | undefined;
+  memberEmail: string | undefined;
 }) {
   const [menusForReservation, setMenusForReservation] = useState<
     MenuForReservation[]
   >([]);
 
   const bookedMenus = menusForReservation.map((menu) => {
-    return { productId: menu.id, quantity: menu.quantity };
+    return { productId: menu.id, quantity: menu.quantity, price: menu.price };
   });
 
   const total = menusForReservation
@@ -67,23 +74,85 @@ export default function ReservationIncludeFoodPage({
 
   const downPayment = (total * 50) / 100;
 
-  const useReservationIncludesDish = createReservationIncludesDishAction.bind(
-    null,
-    userEmail,
-    userName,
-    bookedMenus,
-    downPayment,
-    total
-  );
+  // const useReservationIncludesDish = createReservationIncludesDishAction.bind(
+  //   null,
+  //   userEmail,
+  //   userName,
+  //   bookedMenus,
+  //   downPayment,
+  //   total
+  // );
 
-  const [state, action] = useFormState(useReservationIncludesDish, {});
+  // const [state, action] = useFormState(useReservationIncludesDish, {});
+
+  // useEffect(() => {
+  //   if (state.success) {
+  //     router.push(state.data.link);
+  //   }
+  // }, [router, state]);
+
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.success) {
-      router.push(state.data.link);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const body = {
+      customerName: memberName || e.currentTarget.customerName.value,
+      customerEmail: memberEmail || e.currentTarget.customerEmail.value,
+      reservationDate: `${e.currentTarget.reservationDate.value}T${e.currentTarget.reservationTime.value}`,
+      partySize: Number(e.currentTarget.partySize.value),
+      seatingPreference: e.currentTarget.seatingPreference.value,
+      specialRequest: e.currentTarget.specialRequest.value,
+      reservationType: "include-food",
+      paymentStatus: "downPayment",
+      menus: bookedMenus,
+    };
+
+    try {
+      const response = await fetch(`/api/reservation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.statusText);
+      const { token, guestAccessToken } = result.data;
+
+      window.snap.pay(token, {
+        onSuccess: async function (result: TransactionSuccess) {
+          // fetch buat ngubah payment status, transaksi details
+          await handleTransactionComplete(
+            memberId || guestAccessToken,
+            result.order_id
+          );
+          router.push(
+            isAuth
+              ? `/dashboard/reservation/${result.order_id}`
+              : `/guest/reservation/${guestAccessToken}/${result.order_id}`
+          );
+        },
+        onPending: function (result: any) {
+          console.log(result);
+        },
+        onError: function (result: any) {
+          alert("payment failed!");
+          console.log(result);
+          // display error message with toast and add button in toast to refrest page
+        },
+        onClose: function () {
+          router.push(
+            isAuth
+              ? `/dashboard/transaction`
+              : `/guest/transaction/${guestAccessToken}`
+          );
+        },
+      });
+    } catch (error: any) {
+      console.error(error.message);
     }
-  }, [router, state]);
+  };
 
   function handleAddItem(product: MenuForReservation) {
     setMenusForReservation((prev) => {
@@ -138,6 +207,11 @@ export default function ReservationIncludeFoodPage({
 
   return (
     <>
+      <Script
+        src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL as string}
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string}
+        strategy="lazyOnload"
+      />
       <div className="mx-auto grid gap-3 md:grid-cols-[1fr_250px] lg:grid-cols-5 lg:gap-5 px-2 md:px-4 py-8">
         <div className="lg:col-span-2">
           <Card>
@@ -148,9 +222,9 @@ export default function ReservationIncludeFoodPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={action}>
+              <form onSubmit={handleSubmit}>
                 <div className="grid gap-4">
-                  {!userEmail && (
+                  {!isAuth && (
                     <>
                       <div className="grid gap-2">
                         <div className="flex items-center">

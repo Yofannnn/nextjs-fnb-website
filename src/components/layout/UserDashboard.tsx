@@ -36,6 +36,7 @@ import { logoutAction } from "@/actions/auth.action";
 const dashboardPath = "/dashboard";
 const dashboardReservationPath = "/dashboard/reservation";
 const dashboardSettingsPath = "/dashboard/settings";
+const dashboardTransactionPath = "/dashboard/transaction";
 
 export default function UserDashboardLayout({
   children,
@@ -101,6 +102,24 @@ export default function UserDashboardLayout({
                 <TooltipContent side="right">Reservation</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={dashboardTransactionPath}
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                      pathName.includes(dashboardTransactionPath) &&
+                        "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
+                    )}
+                  >
+                    <Package className="h-5 w-5" />
+                    <span className="sr-only">Transactions</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Transactions</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </nav>
           <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-4">
             <TooltipProvider>
@@ -157,6 +176,17 @@ export default function UserDashboardLayout({
                   >
                     <Package className="h-5 w-5" />
                     Reservation
+                  </Link>
+                  <Link
+                    href={dashboardTransactionPath}
+                    className={cn(
+                      "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
+                      pathName.includes(dashboardTransactionPath) &&
+                        "text-foreground"
+                    )}
+                  >
+                    <Package className="h-5 w-5" />
+                    Transactions
                   </Link>
                   <Link
                     href={dashboardSettingsPath}

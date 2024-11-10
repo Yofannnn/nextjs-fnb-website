@@ -35,7 +35,7 @@ export async function register(data: {
     });
     if (!user) throw new Error("An error occurred while creating your account");
 
-    await createSession(user._doc._id, user._doc.role);
+    await createSession(user.data._doc._id, user.data._doc.role);
     redirect("/dashboard");
   } catch (error: any) {
     return error.message;
@@ -53,15 +53,15 @@ export async function login(data: { email: string; password: string }) {
 
   try {
     const user = await findUserByEmail(email);
-    if (!user) {
+    if (!user.data) {
       throw new Error("Email not found.");
     }
-    const isValidPassword = comparePassword(password, user.password);
+    const isValidPassword = comparePassword(password, user.data.password);
     if (!isValidPassword) {
       throw new Error("Password is incorrect.");
     }
 
-    await createSession(user._id, user.role);
+    await createSession(user.data._id, user.data.role);
     redirect("/dashboard");
   } catch (error: any) {
     return error.message;

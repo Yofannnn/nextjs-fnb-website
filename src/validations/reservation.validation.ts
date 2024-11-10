@@ -10,9 +10,7 @@ export const ReservationSchema = z.object({
     .string()
     .email({ message: "Please enter a valid email." })
     .trim(),
-  reservationDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Invalid date format. Must be in ISO format.",
-  }),
+  reservationDate: z.date({ message: "Reservation date must be a date." }),
   partySize: z
     .number({ invalid_type_error: "Party size must be a number." })
     .min(1, { message: "Party size must be at least 1." }),
@@ -20,7 +18,9 @@ export const ReservationSchema = z.object({
     message: "Seating Preference must be indoor or outdoor",
   }),
   specialRequest: z.string().trim().optional(),
-  tableOnly: z.boolean(),
+  reservationType: z.enum(["table-only", "include-food"], {
+    message: "Reservation type must be table-only or include-food",
+  }),
   menus: z
     .array(
       z.object({
@@ -28,14 +28,11 @@ export const ReservationSchema = z.object({
         quantity: z
           .number()
           .min(1, { message: "Quantity must be at least 1." }),
+        price: z.number(),
       })
     )
     .optional(),
-  downPayment: z
-    .number()
-    .min(1, { message: "DownPayment must be at least 1." }),
-  total: z.number().min(1, { message: "Total must be at least 1." }),
   paymentStatus: z.enum(["downPayment", "paid"], {
-    message: "Payment Status must be downPayment or paid",
+    message: "paymentStatus must be downPayment or paid",
   }),
 });

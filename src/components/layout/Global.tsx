@@ -35,3 +35,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
