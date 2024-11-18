@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  BookOpenCheck,
   Home,
   LayoutDashboard,
   LineChart,
@@ -29,6 +30,7 @@ import {
   Search,
   Settings,
   User,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth.action";
@@ -37,6 +39,7 @@ const dashboardPath = "/dashboard";
 const dashboardReservationPath = "/dashboard/reservation";
 const dashboardSettingsPath = "/dashboard/settings";
 const dashboardTransactionPath = "/dashboard/transaction";
+const dashboardOnlineOrderPath = "/dashboard/online-order";
 
 export default function UserDashboardLayout({
   children,
@@ -95,11 +98,29 @@ export default function UserDashboardLayout({
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
-                    <Package className="h-5 w-5" />
+                    <BookOpenCheck className="h-5 w-5" />
                     <span className="sr-only">Reservation</span>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">Reservation</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={dashboardOnlineOrderPath}
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                      pathName.includes(dashboardOnlineOrderPath) &&
+                        "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
+                    )}
+                  >
+                    <Package className="h-5 w-5" />
+                    <span className="sr-only">Order</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Order</TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <TooltipProvider>
@@ -113,7 +134,7 @@ export default function UserDashboardLayout({
                         "bg-primary text-lg font-semibold text-primary-foreground rounded-full hover:text-background"
                     )}
                   >
-                    <Package className="h-5 w-5" />
+                    <Wallet className="h-5 w-5" />
                     <span className="sr-only">Transactions</span>
                   </Link>
                 </TooltipTrigger>
@@ -174,8 +195,19 @@ export default function UserDashboardLayout({
                         "text-foreground"
                     )}
                   >
-                    <Package className="h-5 w-5" />
+                    <BookOpenCheck className="h-5 w-5" />
                     Reservation
+                  </Link>
+                  <Link
+                    href={dashboardOnlineOrderPath}
+                    className={cn(
+                      "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
+                      pathName.includes(dashboardOnlineOrderPath) &&
+                        "text-foreground"
+                    )}
+                  >
+                    <Package className="h-5 w-5" />
+                    Order
                   </Link>
                   <Link
                     href={dashboardTransactionPath}
@@ -185,7 +217,7 @@ export default function UserDashboardLayout({
                         "text-foreground"
                     )}
                   >
-                    <Package className="h-5 w-5" />
+                    <Wallet className="h-5 w-5" />
                     Transactions
                   </Link>
                   <Link

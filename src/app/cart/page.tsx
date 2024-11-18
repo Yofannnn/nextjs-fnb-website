@@ -10,96 +10,254 @@ import {
 import { AppDispatch, RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { Product } from "@/types/product.type";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { Cart } from "@/types/cart.type";
+import { updateProductsCheckout } from "@/redux/slice/products-checkout.slice";
+import Image from "next/image";
+import { Minus, Plus, Trash2 } from "lucide-react";
+import { rupiah } from "@/lib/format-currency";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const [fetchState, setFetchState] = useState({
-    isLoading: true,
-    isError: false,
-    errorMessage: "",
+  const router = useRouter();
+  const dispatch: AppDispatch = useDispatch();
+  const localCart = useSelector((state: RootState) => state.cart);
+  const productsCheckout = useSelector(
+    (state: RootState) => state.productsCheckout
+  );
+  const [cartItems, setCartItems] = useState<Product[]>([]);
+  const uniqueProductIds = [
+    ...new Set(localCart.map((item) => item.productId)),
+  ].join("-");
+  const [fetchStatus, setFetchStatus] = useState({
+    loading: true,
+    success: false,
+    message: "",
   });
 
-  const cartFromLocal = useSelector((state: RootState) => state.cart);
-  const productIds = [...new Set(cartFromLocal.map((item) => item.id))].join(
-    "-"
-  );
-
-  const [cart, setCart] = useState<Product[]>([]);
-
   useEffect(() => {
-    if (!productIds) return;
+    if (!uniqueProductIds) return;
 
     async function fetchCart() {
       try {
-        const res = await fetch(`/api/cart?ids=${productIds}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!res.ok) throw new Error(res.statusText);
-        const data = await res.json();
-        setCart(data);
-        setFetchState((prev) => ({ ...prev, isLoading: false }));
-      } catch (error) {
-        setFetchState({
-          isLoading: false,
-          isError: true,
-          errorMessage:
-            error instanceof Error ? error.message : "An error occurred",
+        const res = await fetch(
+          `/api/products?productsId=${uniqueProductIds}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.statusText);
+        setCartItems(result.data);
+        setFetchStatus({ success: true, loading: false, message: "" });
+      } catch (error: any) {
+        setFetchStatus({
+          loading: false,
+          success: true,
+          message: error.message,
         });
       }
     }
 
     fetchCart();
-  }, [productIds]);
+  }, [uniqueProductIds]);
 
-  const dispatch: AppDispatch = useDispatch();
-
-  function handleDecrement(productId: string) {
-    dispatch(decrementItemInCart(productId));
+  function adjustProductQuantity(productId: string, increase: boolean) {
+    dispatch(
+      increase ? incrementItemInCart(productId) : decrementItemInCart(productId)
+    );
+    if (isSelectedProduct(productId)) {
+      const currentProduct = productsCheckout.find(
+        (item) => item.productId === productId
+      );
+      if (!currentProduct) return;
+      handleUpdateSelectedProducts(true, {
+        ...currentProduct,
+        quantity: currentProduct.quantity + (increase ? 1 : -1),
+      });
+    }
   }
 
-  function handleIncrement(productId: string) {
-    dispatch(incrementItemInCart(productId));
-  }
-
-  function handleDelete(productId: string) {
+  function removeProduct(productId: string) {
     dispatch(deleteItemInCart(productId));
+    if (isSelectedProduct(productId)) {
+      const currentProduct = productsCheckout.find(
+        (item) => item.productId === productId
+      );
+      if (!currentProduct) return;
+      handleUpdateSelectedProducts(false, currentProduct);
+    }
   }
 
-  if (!cartFromLocal.length) return <h1>Cart is Empty</h1>;
+  function handleUpdateSelectedProducts(
+    select: boolean | string,
+    product: Cart
+  ) {
+    dispatch(updateProductsCheckout({ remove: !select as boolean, product }));
+  }
 
-  if (fetchState.isLoading) return <h1>Loading ...</h1>;
+  function isSelectedProduct(productId: string) {
+    return productsCheckout.some((item) => item.productId === productId);
+  }
 
-  if (fetchState.isError) return <h1>Error: {fetchState.errorMessage}</h1>;
+  function getSubtotal(): number {
+    return productsCheckout.length === 0
+      ? 0
+      : productsCheckout
+          .map((item) => {
+            const findIdx = cartItems.findIndex(
+              (products) => products._id === item.productId
+            );
+            const currentItem = cartItems[findIdx];
+            return currentItem.price * item.quantity;
+          })
+          .reduce((acc, cur) => acc + cur, 0);
+  }
+
+  if (!localCart.length) return <h1>Cart is Empty</h1>;
+  if (fetchStatus.loading) return <h1>Loading ...</h1>;
+  if (!fetchStatus.success) return <h1>Error: {fetchStatus.message}</h1>;
 
   return (
     <>
-      <div>Cart Page</div>
-      <div>
-        {cart.length > 0 &&
-          cart.map((product, i) => {
-            const quantity = cartFromLocal.find(
-              (item) => item.id === product._id
-            )?.quantity;
-            return (
-              <div key={i}>
-                <h1>{product.title}</h1>
-                <h1>{product.price}</h1>
-                <h1>{quantity}</h1>
-                <Button
-                  onClick={() => handleDecrement(product._id)}
-                  disabled={quantity === 1}
+      <div className="w-full grid grid-cols-5 mt-6 px-2">
+        <div className="col-span-5 md:col-span-3 px-4">
+          <div className=" w-full flex justify-between items-center">
+            <h1 className="text-2xl font-semibold">Cart</h1>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="check-all">Checkout All</Label>
+              <Checkbox
+                id="check-all"
+                onCheckedChange={(checked) => {
+                  localCart.forEach((product) => {
+                    dispatch(
+                      updateProductsCheckout({
+                        remove: !checked as boolean,
+                        product,
+                      })
+                    );
+                  });
+                }}
+                checked={localCart.length === productsCheckout.length}
+              />
+            </div>
+          </div>
+          <div>
+            {cartItems.map((product, i) => {
+              const quantity = localCart.find(
+                (item) => item.productId === product._id
+              )?.quantity;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex outline-1 outline-white px-3 py-8 rounded-2xl mb-2 relative",
+                    isSelectedProduct(product._id) && "bg-card"
+                  )}
                 >
-                  min
-                </Button>
-                <Button onClick={() => handleIncrement(product._id)}>
-                  plus
-                </Button>
-                <Button onClick={() => handleDelete(product._id)}>
-                  remove
-                </Button>
-              </div>
-            );
-          })}
+                  <span className="w-full h-px absolute left-0 -bottom-1 bg-muted-foreground" />
+                  <div className="pr-4">
+                    <Checkbox
+                      className="size-5"
+                      onCheckedChange={(e) =>
+                        handleUpdateSelectedProducts(e, {
+                          productId: product._id,
+                          quantity: quantity || 0,
+                        })
+                      }
+                      checked={isSelectedProduct(product._id)}
+                    />
+                  </div>
+                  <div className="max-w-[min-content]">
+                    <Image
+                      className="w-full object-cover aspect-square pointer-events-none"
+                      src={product.image}
+                      width={200}
+                      height={200}
+                      alt={product.title}
+                      priority
+                    />
+                    <div className="flex items-center border border-foreground rounded-full gap-2 mt-6">
+                      <Button
+                        className="rounded-full p-4"
+                        variant="ghost"
+                        onClick={() =>
+                          adjustProductQuantity(product._id, false)
+                        }
+                        disabled={quantity === 1}
+                      >
+                        <Minus className="size-4" />
+                      </Button>
+                      <h6>{quantity}</h6>
+                      <Button
+                        className="rounded-full p-4"
+                        variant="ghost"
+                        onClick={() => adjustProductQuantity(product._id, true)}
+                      >
+                        <Plus className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="w-full pl-4">
+                    <h2 className="text-xl font-medium">{product.title}</h2>
+                    <h6 className="text-base text-muted-foreground">
+                      {product.category}
+                    </h6>
+                    <h6 className="text-base mt-2">
+                      {rupiah.format(product.price)}
+                    </h6>
+                  </div>
+                  <div className="relative">
+                    <h6 className="absolute top-0 right-0">
+                      {rupiah.format(product.price * (quantity || 0))}
+                    </h6>
+                    <Button
+                      className="absolute bottom-0 right-0 rounded-full p-3"
+                      variant="ghost"
+                      onClick={() => removeProduct(product._id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="hidden md:block md:col-span-2 px-4">
+          <h1 className="text-2xl font-semibold mb-8">Summary</h1>
+          <div className="leading-8">
+            <div className="flex items-center justify-between">
+              <span>Subtotal</span>
+              <span>{rupiah.format(getSubtotal())}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Discount</span>
+              <span>-</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Estimated Delivery & Handling</span>
+              <span>-</span>
+            </div>
+            <Separator className="bg-foreground my-6 h-[0.5px]" />
+            <div className="flex items-center justify-between">
+              <span>Total</span>
+              <span>{rupiah.format(getSubtotal())}</span>
+            </div>
+            <Separator className="bg-foreground my-6 h-[0.5px]" />
+            <Button
+              className="w-full rounded-full"
+              onClick={() => router.push("/checkout")}
+              disabled={productsCheckout.length === 0}
+            >
+              Checkout
+            </Button>
+          </div>
+        </div>
       </div>
     </>
   );

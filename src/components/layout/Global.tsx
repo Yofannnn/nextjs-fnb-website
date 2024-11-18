@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import store, { AppDispatch } from "@/redux/store";
 import { Provider, useDispatch } from "react-redux";
 import { loadCartFromLocal } from "@/redux/slice/cart.slice";
+import { loadProductsCheckout } from "@/redux/slice/products-checkout.slice";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import Navbar from "../fragments/Navbar";
+import Script from "next/script";
 
 export default function Global({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +25,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     dispatch(loadCartFromLocal());
+    dispatch(loadProductsCheckout());
     setMounted(true);
   }, [dispatch]);
 
@@ -30,6 +33,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <Script
+        src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL as string}
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string}
+        strategy="lazyOnload"
+      />
       <Navbar />
       {children}
     </>

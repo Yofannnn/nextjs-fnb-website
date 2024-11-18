@@ -88,16 +88,19 @@ export async function getMidtransTransactionDetails(
 
 export async function handleTransactionComplete(
   accessId: string,
-  reservationId: string
+  orderId: string,
+  orderType: "reservation" | "online-order"
 ) {
+  const url =
+    orderType === "reservation"
+      ? `/api/reservation?accessId=${accessId}&reservationId=${orderId}&action=transaction-complete`
+      : `/api/online-order?accessId=${accessId}&orderId=${orderId}&action=transaction-complete`;
+
   try {
-    const res = await fetch(
-      `/api/reservation?accessId=${accessId}&reservationId=${reservationId}&action=transaction-complete`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+    });
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return { success: true };

@@ -15,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { TransactionSuccess } from "@/types/transaction.type";
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { handleTransactionComplete } from "@/midtrans/init";
 
@@ -30,19 +29,7 @@ export default function ReservationTableOnlyPage({
   memberName: string | undefined;
   memberEmail: string | undefined;
 }) {
-  // const bindReservationTableOnlyAction = createReservationTableOnlyAction.bind(
-  //   null,
-  //   memberEmail,
-  //   memberName
-  // );
-  // const [state, action] = useFormState(bindReservationTableOnlyAction, {});
   const router = useRouter();
-
-  // useEffect(() => {
-  //   if (state.success) {
-  //     router.push(state.data.link);
-  //   }
-  // }, [router, state]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,7 +64,8 @@ export default function ReservationTableOnlyPage({
           // fetch buat ngubah payment status, transaksi details
           await handleTransactionComplete(
             memberId || guestAccessToken,
-            result.order_id
+            result.order_id,
+            "reservation"
           );
           router.push(
             isAuth
@@ -108,11 +96,6 @@ export default function ReservationTableOnlyPage({
 
   return (
     <>
-      <Script
-        src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL as string}
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string}
-        strategy="lazyOnload"
-      />
       <div className="w-full min-h-svh lg:grid lg:grid-cols-2">
         <div className="w-full h-full flex items-center justify-center py-12">
           <div className="mx-auto grid p-2 md:p-0 gap-6 w-[350px]">

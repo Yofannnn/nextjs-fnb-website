@@ -27,5 +27,6 @@ export default async function DashboardTransaction() {
 
   if (!isAuth) return null;
   if (!success) throw new Error(message);
+  if (data.length === 0) return <h1>Sorry you have no Transaction</h1>;
   return <MemberTransactionListPage transactionList={data} />;
 }

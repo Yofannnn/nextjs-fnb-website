@@ -32,14 +32,11 @@ import { MinusIcon, PlusIcon, TrashIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Textarea } from "../ui/textarea";
-import { createReservationIncludesDishAction } from "@/actions/reservation.action";
-import { useFormState } from "react-dom";
+import { Textarea } from "@/components/ui/textarea";
 import { rupiah } from "@/lib/format-currency";
 import { useRouter } from "next/navigation";
 import { TransactionSuccess } from "@/types/transaction.type";
 import { handleTransactionComplete } from "@/midtrans/init";
-import Script from "next/script";
 
 interface MenuForReservation {
   id: string;
@@ -73,23 +70,6 @@ export default function ReservationIncludeFoodPage({
     .reduce((acc, cur) => acc + cur, 0);
 
   const downPayment = (total * 50) / 100;
-
-  // const useReservationIncludesDish = createReservationIncludesDishAction.bind(
-  //   null,
-  //   userEmail,
-  //   userName,
-  //   bookedMenus,
-  //   downPayment,
-  //   total
-  // );
-
-  // const [state, action] = useFormState(useReservationIncludesDish, {});
-
-  // useEffect(() => {
-  //   if (state.success) {
-  //     router.push(state.data.link);
-  //   }
-  // }, [router, state]);
 
   const router = useRouter();
 
@@ -125,7 +105,8 @@ export default function ReservationIncludeFoodPage({
           // fetch buat ngubah payment status, transaksi details
           await handleTransactionComplete(
             memberId || guestAccessToken,
-            result.order_id
+            result.order_id,
+            "reservation"
           );
           router.push(
             isAuth
@@ -207,11 +188,6 @@ export default function ReservationIncludeFoodPage({
 
   return (
     <>
-      <Script
-        src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL as string}
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string}
-        strategy="lazyOnload"
-      />
       <div className="mx-auto grid gap-3 md:grid-cols-[1fr_250px] lg:grid-cols-5 lg:gap-5 px-2 md:px-4 py-8">
         <div className="lg:col-span-2">
           <Card>

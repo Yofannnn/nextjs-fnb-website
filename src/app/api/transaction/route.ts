@@ -17,6 +17,10 @@ import {
   requestMidtransTransaction,
 } from "@/midtrans/init";
 import { findUserById } from "@/services/auth.service";
+import {
+  getOnlineOrderById,
+  getOnlineOrdersByEmail,
+} from "@/services/online-order.service";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -28,9 +32,9 @@ export async function GET(request: Request) {
 
     const guestEmail = (await verifyUniqueLink(accessId)).email;
     const isMember = (await findUserById(accessId as string)).data;
-    const correctEmail = guestEmail || isMember.email;
+    const email = guestEmail || isMember.email;
 
-    if (!correctEmail)
+    if (!email)
       return new Response(
         JSON.stringify({
           status: 400,
@@ -40,8 +44,21 @@ export async function GET(request: Request) {
       );
 
     if (orderId) {
+      const reservationMemberEmail = (await getReservationById(orderId)).data;
+      const onlineOrderMemberEmail = (await getOnlineOrderById(orderId)).data;
+
+      const customerEmail = reservationMemberEmail || onlineOrderMemberEmail;
+
+      if (customerEmail.customerEmail !== email)
+        return new Response(
+          JSON.stringify({
+            status: 403,
+            statusText: "You are not allowed to access this transaction",
+          }),
+          { status: 403 }
+        );
+
       const transaction = await getTransactionByOrderId(orderId);
-      const { customerEmail } = (await getReservationById(orderId)).data;
 
       if (!transaction.data)
         return new Response(
@@ -50,24 +67,6 @@ export async function GET(request: Request) {
             statusText: "Invalid ID",
           }),
           { status: 404 }
-        );
-
-      if (!transaction.success)
-        return new Response(
-          JSON.stringify({
-            status: 500,
-            statusText: transaction.message,
-          }),
-          { status: 500 }
-        );
-
-      if (customerEmail !== correctEmail)
-        return new Response(
-          JSON.stringify({
-            status: 403,
-            statusText: "You are not allowed to access this transaction",
-          }),
-          { status: 403 }
         );
 
       return new Response(
@@ -80,12 +79,13 @@ export async function GET(request: Request) {
       );
     }
 
-    const reservationsData = await getReservationByEmail(correctEmail);
-    const orderIds = reservationsData.data.map(
-      (reservation: Reservation) => reservation.reservationId
-    );
+    const reservationsData = await getReservationByEmail(email);
+    const onlineOrdersData = await getOnlineOrdersByEmail(email);
+    const uniqueOrderIds = reservationsData.data
+      .map((reservation: Reservation) => reservation.reservationId)
+      .concat(onlineOrdersData.data.map((order: any) => order.orderId));
 
-    const transactions = await getSomeTransactionsByOrderId(orderIds);
+    const transactions = await getSomeTransactionsByOrderId(uniqueOrderIds);
 
     if (!transactions.success) throw new Error(transactions.message);
 
@@ -245,7 +245,8 @@ export async function PUT(request: Request) {
           })
         ),
         paymentType: midtransTransactionDetails.data?.payment_type,
-        transactionStatus: "settlement",
+        transactionStatus: midtransTransactionDetails.data?.transaction_status,
+        settlementTime: midtransTransactionDetails.data?.settlement_time,
       };
 
       const updateTransaction = await updateTransactionByOrderId(

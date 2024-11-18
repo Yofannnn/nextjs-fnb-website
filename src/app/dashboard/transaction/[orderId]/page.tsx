@@ -36,5 +36,5 @@ export default async function DashboardTransactionDetails({
 
   if (!isAuth) return null;
   if (!success) throw new Error(message);
-  return <MemberTransactionDetailsPage transaction={data} />;
+  return <MemberTransactionDetailsPage userId={userId} transaction={data} />;
 }

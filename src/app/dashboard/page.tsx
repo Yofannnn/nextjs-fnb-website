@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format-date";
 
 export default async function UserDashboardHome() {
-  const { status, user, error } = await getUser();
+  const { success, user, message } = await getUser();
 
-  if (status === "failed")
+  if (!success)
     return (
       <div className="w-full h-svh flex justify-center items-center">
-        <h1>{error}</h1>
+        <h1>{message}</h1>
       </div>
     );
 
@@ -33,7 +33,7 @@ export default async function UserDashboardHome() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Joined at{" "}
-                    {user && formatDate(user?.createdAt, "formatDateLong")}
+                    {user && formatDate(user?.createdAt, "short")}
                   </p>
                 </div>
               </CardContent>

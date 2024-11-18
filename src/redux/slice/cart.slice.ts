@@ -21,7 +21,7 @@ export const addItemToCart = createAsyncThunk(
   (idProduct: string) => {
     const cart: Cart[] = getLocalStorageCart();
     const productInCartIndex = cart.findIndex(
-      (product: Cart) => product.id === idProduct
+      (product: Cart) => product.productId === idProduct
     );
 
     if (productInCartIndex !== -1) {
@@ -33,7 +33,7 @@ export const addItemToCart = createAsyncThunk(
       setLocalStorageCart(updatedCart);
       return updatedCart;
     } else {
-      const updatedCart = [...cart, { id: idProduct, quantity: 1 }];
+      const updatedCart = [...cart, { productId: idProduct, quantity: 1 }];
       setLocalStorageCart(updatedCart);
       return updatedCart;
     }
@@ -45,7 +45,7 @@ export const decrementItemInCart = createAsyncThunk(
   (idProduct: string) => {
     const cart: Cart[] = getLocalStorageCart();
     const productInCartIndex = cart.findIndex(
-      (product: Cart) => product.id === idProduct
+      (product: Cart) => product.productId === idProduct
     );
     if (productInCartIndex !== -1) {
       const updatedCart = cart
@@ -66,7 +66,7 @@ export const incrementItemInCart = createAsyncThunk(
   (idProduct: string) => {
     const cart: Cart[] = getLocalStorageCart();
     const productInCartIndex = cart.findIndex(
-      (product: Cart) => product.id === idProduct
+      (product: Cart) => product.productId === idProduct
     );
     if (productInCartIndex !== -1) {
       const updatedCart = cart.map((product, index) =>
@@ -84,7 +84,7 @@ export const deleteItemInCart = createAsyncThunk(
   "cart/deleteItemInCart",
   (idProduct: string) => {
     const cart: Cart[] = getLocalStorageCart();
-    const updatedCart = cart.filter((product) => product.id !== idProduct);
+    const updatedCart = cart.filter((product) => product.productId !== idProduct);
     setLocalStorageCart(updatedCart);
     return updatedCart;
   }
