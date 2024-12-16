@@ -18,11 +18,12 @@ async function getReservationDetails(userId: string, reservationId: string) {
   }
 }
 
-export default async function MemberReservationDetails({
-  params,
-}: {
-  params: { reservationId: string };
-}) {
+export default async function MemberReservationDetails(
+  props: {
+    params: Promise<{ reservationId: string }>;
+  }
+) {
+  const params = await props.params;
   const { isAuth, userId } = await verifySession();
   const { reservationId } = params;
   const { success, message, data } = await getReservationDetails(

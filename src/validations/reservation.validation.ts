@@ -18,9 +18,6 @@ export const ReservationSchema = z.object({
     message: "Seating Preference must be indoor or outdoor",
   }),
   specialRequest: z.string().trim().optional(),
-  reservationType: z.enum(["table-only", "include-food"], {
-    message: "Reservation type must be table-only or include-food",
-  }),
   menus: z
     .array(
       z.object({
@@ -28,7 +25,6 @@ export const ReservationSchema = z.object({
         quantity: z
           .number()
           .min(1, { message: "Quantity must be at least 1." }),
-        price: z.number(),
       })
     )
     .optional(),

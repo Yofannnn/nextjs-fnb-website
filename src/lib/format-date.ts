@@ -1,15 +1,16 @@
 export function formatDate(
   isoDate: Date | string,
-  type: "long" | "short" | "numeric",
+  type: "long" | "short" | "numeric" = "short",
   separator: "-" | "/" = "/"
 ): string {
   const date = new Date(isoDate);
+  if (isNaN(date.getTime())) throw new Error("Invalid date provided");
 
   switch (type) {
     case "short":
       return date.toLocaleDateString("en-US", {
         year: "numeric",
-        month: "long",
+        month: "short",
         day: "numeric",
       });
     case "long":
@@ -30,38 +31,35 @@ export function formatDate(
   }
 }
 
-export function toISODate(dateInput: string, timeInput: string): string {
-  if (!dateInput || !timeInput) {
-    throw new Error("Both dateInput and timeInput are required.");
-  }
-  const [year, month, day] = dateInput.split("-");
-  const [hour, minute] = timeInput.split(":");
+export function formatTime(isoDate: Date | string): string {
+  const date = new Date(isoDate);
+  if (isNaN(date.getTime())) throw new Error("Invalid date provided");
 
-  if (
-    !year ||
-    !month ||
-    !day ||
-    !hour ||
-    !minute ||
-    isNaN(+year) ||
-    isNaN(+month) ||
-    isNaN(+day) ||
-    isNaN(+hour) ||
-    isNaN(+minute)
-  ) {
-    throw new Error("Invalid date or time input.");
-  }
-
-  const dateTime = new Date(Date.UTC(+year, +month - 1, +day, +hour, +minute));
-  return dateTime.toISOString();
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
-export function toDateTime(isoString: string | Date): {
+export function getDateAndTime(isoString: string | Date): {
   date: string;
   time: string;
 } {
-  const dateTime = new Date(isoString);
-  const date = dateTime.toISOString().split("T")[0];
-  const time = dateTime.toISOString().split("T")[1].slice(0, 5);
-  return { date, time };
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) throw new Error("Invalid date provided");
+
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+
+  const formattedDate = `${year}-${month}-${day}`;
+
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+
+  return {
+    date: formattedDate, // YYYY-MM-DD
+    time: `${hours}:${minutes}`, // HH:mm
+  };
 }

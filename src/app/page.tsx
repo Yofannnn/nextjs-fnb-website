@@ -86,7 +86,7 @@ export default async function Home() {
       {/* third section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 md:px-12 py-14">
         <BlurFade
-          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6 relative"
+          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6"
           delay={0.3 + 0 * 0.1}
         >
           <Image
@@ -121,7 +121,7 @@ export default async function Home() {
           </Link>
         </BlurFade>
         <BlurFade
-          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6 relative"
+          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6"
           delay={0.3 + 1 * 0.1}
         >
           <Image
@@ -156,7 +156,7 @@ export default async function Home() {
           </Link>
         </BlurFade>
         <BlurFade
-          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6 relative"
+          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6"
           delay={0.3 + 2 * 0.1}
         >
           <Image

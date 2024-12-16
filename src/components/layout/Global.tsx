@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import store, { AppDispatch } from "@/redux/store";
 import { Provider, useDispatch } from "react-redux";
 import { loadCartFromLocal } from "@/redux/slice/cart.slice";
-import { loadProductsCheckout } from "@/redux/slice/products-checkout.slice";
+import { loadCheckoutData } from "@/redux/slice/checkout.slice";
+import { fetchClientReservationDetails } from "@/redux/slice/reservation.slice";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import Navbar from "../fragments/Navbar";
+import Navbar from "@/components/fragments/Navbar";
 import Script from "next/script";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function Global({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +27,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     dispatch(loadCartFromLocal());
-    dispatch(loadProductsCheckout());
+    dispatch(loadCheckoutData());
+    dispatch(fetchClientReservationDetails());
     setMounted(true);
   }, [dispatch]);
 
@@ -40,6 +43,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       />
       <Navbar />
       {children}
+      <Toaster />
     </>
   );
 }

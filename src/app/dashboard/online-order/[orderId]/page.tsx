@@ -37,11 +37,12 @@ async function fetchOrderItems(uniqueProductIds: string) {
   }
 }
 
-export default async function DashboardOnlineOrderDetails({
-  params,
-}: {
-  params: { orderId: string };
-}) {
+export default async function DashboardOnlineOrderDetails(
+  props: {
+    params: Promise<{ orderId: string }>;
+  }
+) {
+  const params = await props.params;
   const { orderId } = params;
 
   const { isAuth, userId } = await verifySession();

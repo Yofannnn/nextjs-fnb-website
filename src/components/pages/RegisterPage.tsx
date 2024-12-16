@@ -11,13 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useFormState } from "react-dom";
 import { registerAction } from "@/actions/auth.action";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useActionState } from "react";
 
 export default function RegisterPage({ isAuth }: { isAuth: boolean }) {
-  const [state, action] = useFormState(registerAction, {});
+  const [state, action] = useActionState(registerAction, {});
   const searchParams = useSearchParams();
   const getRedirect = searchParams.get("redirect");
   const redirectTo = getRedirect?.split("_").join("/");

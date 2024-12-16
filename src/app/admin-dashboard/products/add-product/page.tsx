@@ -19,15 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFormState } from "react-dom";
 import { addProduct } from "@/actions/product.action";
 import { ChevronLeft, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useActionState } from "react";
 
 export default function AddProductPage() {
-  const [state, action] = useFormState(addProduct, {});
+  const [state, action] = useActionState(addProduct, {});
   const router = useRouter();
   const [previewImage, setPreviewImage] = useState<string>();
   const handleChangePreviewImage = (e: any) => {

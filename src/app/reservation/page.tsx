@@ -1,22 +1,9 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import ReservationPage from "@/components/pages/ReservationPage";
+import { getUser } from "@/lib/dal";
 
-export default function Reservation() {
-  return (
-    <>
-      <div>
-        <h1>Reservation</h1>
-        <div>
-          <Button>
-            <Link href="/reservation/table-only">Reservation Table Only</Link>
-          </Button>
-          <Button>
-            <Link href="/reservation/include-food">
-              Reservation Include Food
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </>
-  );
+export default async function Reservation() {
+  const { user } = await getUser();
+  const userDetails = user ? { ...user, _id: user._id.toString() } : undefined;
+
+  return <ReservationPage isAuth={!!user} user={userDetails} />;
 }

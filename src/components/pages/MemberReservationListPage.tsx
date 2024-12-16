@@ -130,7 +130,7 @@ export default function MemberReservationListPage({
                       <TableCell>
                         {formatDate(
                           new Date(reservation.reservationDate),
-                          "formatDateLong"
+                          "short"
                         )}
                       </TableCell>
                       <TableCell>

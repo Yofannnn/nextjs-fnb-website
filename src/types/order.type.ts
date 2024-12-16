@@ -1,40 +1,54 @@
-// Type for selected menu items in orders that include food
-export type MenuSelection = {
-  productId: string;
-  quantity: number;
-  price: number;
-};
-
-// Base Order type to allow shared fields for Reservation and Online Order
-interface BaseOrder {
+export interface Reservation {
+  reservationId: string;
   customerName: string;
   customerEmail: string;
-  paymentStatus: "downPayment" | "paid";
-  downPayment: number;
+  reservationDate: Date;
+  partySize: number;
+  seatingPreference: "indoor" | "outdoor";
+  specialRequest?: string;
+  reservationType: "table-only" | "include-food";
+  menus?: ProductSelection[];
+  subtotal: number;
   discount: number;
   total: number;
+  downPayment: number;
   transactionId: string;
+  paymentStatus: "downPayment" | "paid";
+  reservationStatus: "pending" | "confirmed" | "rescheduled" | "cancelled";
   reasonCancellation?: string;
   reasonPending?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Reservation type extends BaseOrder
-export interface Reservation extends BaseOrder {
-  reservationId: string;
-  reservationDate: Date;
-  reservationType: "table-only" | "include-food";
-  seatingPreference: "indoor" | "outdoor";
-  partySize: number;
-  specialRequest?: string;
-  menus?: MenuSelection[]; // Only applicable if reservationType is "include-food"
-  reservationStatus: "pending" | "confirmed" | "rescheduled" | "cancelled";
+export interface OnlineOrder {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  customerAddress: string;
+  deliveryDate: Date;
+  items: ProductSelection[];
+  note?: string;
+  subtotal: number;
+  shippingCost: number;
+  discount: number;
+  totalAmount: number;
+  transactionId: string;
+  orderStatus:
+    | "pending"
+    | "confirmed"
+    | "processing"
+    | "shipping"
+    | "delivered"
+    | "cancelled"
+    | "expired";
+  reasonCancellation?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// OnlineOrder type extends BaseOrder
-export interface OnlineOrder extends BaseOrder {
-  orderType: "online-order";
-  menus: MenuSelection[];
-  specialRequest?: string;
+export interface ProductSelection {
+  productId: string;
+  quantity: number;
+  price: number;
 }

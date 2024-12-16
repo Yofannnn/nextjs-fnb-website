@@ -18,11 +18,12 @@ async function getReservationDetails(token: string, id: string) {
   }
 }
 
-export default async function ManageReservationsDetails({
-  params,
-}: {
-  params: { token: string; id: string };
-}) {
+export default async function ManageReservationsDetails(
+  props: {
+    params: Promise<{ token: string; id: string }>;
+  }
+) {
+  const params = await props.params;
   const { token, id } = params;
   const { success, message, data } = await getReservationDetails(token, id);
   // should improve error handling

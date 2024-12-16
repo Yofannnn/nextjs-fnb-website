@@ -22,11 +22,12 @@ async function getTransactionDetails(accessId: string, orderId: string) {
   }
 }
 
-export default async function DashboardTransactionDetails({
-  params,
-}: {
-  params: { orderId: string };
-}) {
+export default async function DashboardTransactionDetails(
+  props: {
+    params: Promise<{ orderId: string }>;
+  }
+) {
+  const params = await props.params;
   const { orderId } = params;
   const { isAuth, userId } = await verifySession();
   const { success, message, data } = await getTransactionDetails(

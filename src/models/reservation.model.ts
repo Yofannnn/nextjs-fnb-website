@@ -29,9 +29,10 @@ const ReservationSchema = new Schema(
       required: false,
       default: undefined,
     },
-    downPayment: { type: Number, required: true },
+    subtotal: { type: Number, required: true },
     discount: { type: Number, required: false },
     total: { type: Number, required: true },
+    downPayment: { type: Number, required: true },
     transactionId: { type: String, required: true },
     paymentStatus: {
       type: String,

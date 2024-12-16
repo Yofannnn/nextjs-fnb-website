@@ -2,26 +2,23 @@ import { createUniqueLink } from "@/lib/guest-unique-link";
 import { findUserByEmail } from "@/services/auth.service";
 
 export async function POST(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const redirect = searchParams.get("redirect");
   const { email } = await request.json();
 
   try {
     const isMember = await findUserByEmail(email);
-    if (isMember)
+    if (isMember.data)
       return new Response(
         JSON.stringify({
           status: 400,
           statusText:
-            "You are already a member, Please login to menage your reservation",
+            "You are already a member, Please login with your email and password.",
         }),
         { status: 400 }
       );
 
     // check apa punya transaksi, reservasi, atau online oreder, kalau ngga mungkin retrun 400
 
-    const token = await createUniqueLink({ email });
-    const redirect_url = `http://localhost:3000/guest/${redirect}/${token}`;
+    const guestAccessToken = await createUniqueLink({ email });
 
     // send link to customer email
 
@@ -29,7 +26,7 @@ export async function POST(request: Request) {
       JSON.stringify({
         status: 200,
         statusText: "Success",
-        data: { redirect_url },
+        data: { guestAccessToken },
       })
     );
   } catch (error: any) {

@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { formatDate, toDateTime } from "@/lib/format-date";
+import { formatDate, formatTime } from "@/lib/format-date";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,8 +53,7 @@ import {
   TimerReset,
 } from "lucide-react";
 import { Reservation } from "@/types/order.type";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { Dispatch, SetStateAction, useEffect, useState, useActionState } from "react";
 import {
   cancelReservationAction,
   pendingReservationAction,
@@ -94,7 +93,7 @@ export default function MemberReservationDetailsPage({
                 </Button>
               </CardTitle>
               <CardDescription>
-                {formatDate(new Date(reservation.createdAt), "formatDateLong")}
+                {formatDate(new Date(reservation.createdAt), "short")}
               </CardDescription>
             </div>
             <div>
@@ -110,17 +109,14 @@ export default function MemberReservationDetailsPage({
                     Reservation Date
                   </span>
                   <span>
-                    {formatDate(
-                      new Date(reservation.reservationDate),
-                      "formatDateLong"
-                    )}
+                    {formatDate(new Date(reservation.reservationDate), "short")}
                   </span>
                 </li>
                 <li className="flex items-center justify-between">
                   <span className="text-muted-foreground">
                     Reservation Time
                   </span>
-                  <span>{toDateTime(reservation.reservationDate).time}</span>
+                  <span>{formatTime(reservation.reservationDate)}</span>
                 </li>
                 <li className="flex items-center justify-between">
                   <span className="text-muted-foreground">Party Size</span>
@@ -153,7 +149,7 @@ export default function MemberReservationDetailsPage({
                 </li>
                 <li className="flex items-center justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>{rupiah.format(reservation.total)}</span>
+                  <span>{rupiah.format(reservation.subtotal)}</span>
                 </li>
                 <li className="flex items-center justify-between font-semibold">
                   <span className="text-muted-foreground">Total</span>
@@ -193,7 +189,7 @@ export default function MemberReservationDetailsPage({
             <div className="text-xs text-muted-foreground">
               Updated{" "}
               <time dateTime="2023-11-23">
-                {formatDate(reservation.updatedAt, "formatDateLong")}
+                {formatDate(reservation.updatedAt, "short")}
               </time>
             </div>
           </CardFooter>
@@ -242,10 +238,10 @@ function UpdateReservationComponent({
   const useUpdateReservation = updateReservationAction.bind(null, {
     isMember,
     userId,
-    reservationId: reservation._id,
+    reservationId: reservation.reservationId,
     bookedMenus: reservation.menus ? reservation.menus : undefined,
   });
-  const [state, action] = useFormState(useUpdateReservation, {});
+  const [state, action] = useActionState(useUpdateReservation, {});
   const router = useRouter();
 
   useEffect(() => {
@@ -415,7 +411,7 @@ function CancelReservationComponent({
     userId,
     reservationId,
   });
-  const [state, action] = useFormState(useCancelReservation, {});
+  const [state, action] = useActionState(useCancelReservation, {});
   const router = useRouter();
 
   useEffect(() => {
@@ -508,7 +504,7 @@ function PendingReservationComponent({
     userId,
     reservationId,
   });
-  const [state, action] = useFormState(useCancelReservation, {});
+  const [state, action] = useActionState(useCancelReservation, {});
   const router = useRouter();
 
   useEffect(() => {

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { useEffect, useState, useActionState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Product } from "@/types/product.type";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,7 @@ export default function EditProductPage() {
     product?._id ?? "",
     product?.image ?? ""
   );
-  const [state, action] = useFormState(editProductWithId, {});
+  const [state, action] = useActionState(editProductWithId, {});
 
   useEffect(() => {
     async function getProduct() {

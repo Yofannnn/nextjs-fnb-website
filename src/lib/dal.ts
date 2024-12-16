@@ -27,7 +27,7 @@ interface User {
 }
 
 export const verifySession = cache(async (): Promise<VerifySession> => {
-  const cookie = cookies().get("session")?.value;
+  const cookie = (await cookies()).get("session")?.value;
   const session = await decrypt(cookie);
 
   return !session?.userId

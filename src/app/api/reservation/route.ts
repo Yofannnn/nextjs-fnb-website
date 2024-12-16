@@ -8,7 +8,8 @@ import {
   getReservationList,
   updateReservationById,
 } from "@/services/reservation.service";
-import { MenuSelection, Reservation } from "@/types/order.type";
+import { ProductSelection, Reservation } from "@/types/order.type";
+import { Product } from "@/types/product.type";
 import { ReservationSchema } from "@/validations/reservation.validation";
 import { v4 as uuidv4 } from "uuid";
 
@@ -136,7 +137,6 @@ export async function POST(request: Request) {
       partySize,
       seatingPreference,
       specialRequest,
-      reservationType,
       paymentStatus,
       menus,
     } = validationBody.data;
@@ -160,9 +160,13 @@ export async function POST(request: Request) {
     const isMember = (await findUserByEmail(validationBody.data.customerEmail))
       .data;
     const reservationId = uuidv4();
-    const total = getTotal(isMember, menus);
+    const menusFromDb = await getProductsFromDb(menus || []);
+    const reservationType =
+      menusFromDb.length > 0 ? "include-food" : "table-only";
+    const subtotal = getSubtotal(menusFromDb);
+    const discount = getDiscount(isMember, !!menusFromDb, subtotal);
+    const total = subtotal - discount;
     const downPayment = getDownPayment(reservationType, paymentStatus, total);
-    const discount = getDiscount(isMember, !!menus, total);
 
     const transactionPayload = {
       orderId: reservationId,
@@ -203,10 +207,11 @@ export async function POST(request: Request) {
       seatingPreference,
       specialRequest,
       reservationType,
-      menus: menus || [],
-      downPayment,
+      menus: menusFromDb || [],
+      subtotal,
       discount,
       total,
+      downPayment,
       transactionId: midtransPaymentToken,
       paymentStatus,
       reservationStatus: "pending",
@@ -334,6 +339,55 @@ export async function PUT(request: Request) {
   }
 }
 
+async function getProductsFromDb(
+  itemsFromClient: { productId: string; quantity: number }[]
+): Promise<ProductSelection[] | []> {
+  if (itemsFromClient.length === 0) return [];
+
+  try {
+    const productsId = [
+      ...new Set(itemsFromClient.map((item) => item.productId)),
+    ].join("-");
+
+    const res = await fetch(
+      `${process.env.BASE_URL}/api/products?productsId=${productsId}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok) throw new Error(result.statusText);
+
+    const productsMap = new Map(
+      result.data.map((product: Product) => [product._id, product])
+    );
+
+    const products = itemsFromClient
+      .map((item) => {
+        const product = productsMap.get(item.productId) as Product;
+        return product
+          ? {
+              productId: item.productId,
+              quantity: item.quantity,
+              price: product.price,
+            }
+          : null;
+      })
+      .filter((item): item is ProductSelection => item !== null);
+
+    return products || [];
+  } catch (error: any) {
+    return error.message;
+  }
+}
+
+function getSubtotal(items: ProductSelection[]): number {
+  return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+}
+
 function getDownPayment(
   reservationType: "table-only" | "include-food",
   paymentStatus: "downPayment" | "paid",
@@ -345,23 +399,15 @@ function getDownPayment(
   return 30000;
 }
 
-function getTotal(member: boolean, menus: MenuSelection[] | undefined): number {
-  if (!menus) return 30000;
-  const total = menus
-    ?.map((menu) => menu.quantity * menu.price)
-    .reduce((acc, cur) => acc + cur, 0);
-  return member ? total - getDiscount(member, true, total) : total;
-}
-
 function getDiscount(
   member: boolean,
   includeFood: boolean,
-  total: number
+  subtotal: number
 ): number {
   if (!includeFood) return 0;
 
   const discount = 10; // 10 percent
-  return !member ? 0 : (total * discount) / 100;
+  return !member ? 0 : (subtotal * discount) / 100;
 }
 
 async function checkIsConflictReservation(

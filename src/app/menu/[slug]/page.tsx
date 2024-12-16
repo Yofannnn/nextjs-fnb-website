@@ -13,11 +13,12 @@ async function getProductById(id: string) {
   }
 }
 
-export default async function MenuDetails({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default async function MenuDetails(
+  props: {
+    params: Promise<{ slug: string }>;
+  }
+) {
+  const params = await props.params;
   const { slug } = params;
   const product = await getProductById(slug);
 

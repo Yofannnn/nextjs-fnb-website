@@ -87,22 +87,11 @@ export async function GET(request: Request) {
 
     const transactions = await getSomeTransactionsByOrderId(uniqueOrderIds);
 
-    if (!transactions.success) throw new Error(transactions.message);
-
-    if (!transactions.data)
-      return new Response(
-        JSON.stringify({
-          status: 404,
-          statusText: "Transactions not found",
-        }),
-        { status: 404 }
-      );
-
     return new Response(
       JSON.stringify({
         status: 200,
         statusText: "Transactions fetched successfully",
-        data: transactions.data,
+        data: transactions.data || [],
       }),
       { status: 200 }
     );

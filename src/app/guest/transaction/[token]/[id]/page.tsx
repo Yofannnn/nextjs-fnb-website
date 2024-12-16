@@ -17,11 +17,12 @@ async function getTransactionDetails(accessId: string, orderId: string) {
   }
 }
 
-export default async function GuestTransactionDetails({
-  params,
-}: {
-  params: { token: string; id: string };
-}) {
+export default async function GuestTransactionDetails(
+  props: {
+    params: Promise<{ token: string; id: string }>;
+  }
+) {
+  const params = await props.params;
   const { token, id } = params;
   const transaction = await getTransactionDetails(token, id);
 

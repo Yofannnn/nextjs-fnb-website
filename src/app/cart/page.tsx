@@ -12,22 +12,35 @@ import { useDispatch, useSelector } from "react-redux";
 import { Product } from "@/types/product.type";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Cart } from "@/types/cart.type";
-import { updateProductsCheckout } from "@/redux/slice/products-checkout.slice";
+import {
+  saveCheckoutData,
+  updateProductsCheckout,
+} from "@/redux/slice/checkout.slice";
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { rupiah } from "@/lib/format-currency";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 export default function CartPage() {
   const router = useRouter();
   const dispatch: AppDispatch = useDispatch();
   const localCart = useSelector((state: RootState) => state.cart);
-  const productsCheckout = useSelector(
-    (state: RootState) => state.productsCheckout
+  const localCheckoutData = useSelector(
+    (state: RootState) => state.clientCheckoutData
   );
+  const { productsCheckout } = localCheckoutData;
   const [cartItems, setCartItems] = useState<Product[]>([]);
   const uniqueProductIds = [
     ...new Set(localCart.map((item) => item.productId)),
@@ -37,6 +50,16 @@ export default function CartPage() {
     success: false,
     message: "",
   });
+
+  const cartItemsMap = new Map(
+    cartItems.map((product) => [product._id, product])
+  );
+  const renderedCartItems = localCart
+    .map((item: { productId: string; quantity: number }) => {
+      const product = cartItemsMap.get(item.productId);
+      return product ? { ...product, quantity: item.quantity } : null;
+    })
+    .filter((item) => item !== null);
 
   useEffect(() => {
     if (!uniqueProductIds) return;
@@ -66,18 +89,24 @@ export default function CartPage() {
     fetchCart();
   }, [uniqueProductIds]);
 
-  function adjustProductQuantity(productId: string, increase: boolean) {
+  function adjustProductQuantity(
+    newProduct: { quantity: number } & Product,
+    increase: boolean
+  ) {
     dispatch(
-      increase ? incrementItemInCart(productId) : decrementItemInCart(productId)
+      increase
+        ? incrementItemInCart(newProduct._id)
+        : decrementItemInCart(newProduct._id)
     );
-    if (isSelectedProduct(productId)) {
+    if (isSelectedProduct(newProduct._id)) {
       const currentProduct = productsCheckout.find(
-        (item) => item.productId === productId
+        (item) => item._id === newProduct._id
       );
       if (!currentProduct) return;
-      handleUpdateSelectedProducts(true, {
-        ...currentProduct,
-        quantity: currentProduct.quantity + (increase ? 1 : -1),
+      handleUpdateSelectedProducts({
+        select: true,
+        increase,
+        product: currentProduct,
       });
     }
   }
@@ -86,36 +115,49 @@ export default function CartPage() {
     dispatch(deleteItemInCart(productId));
     if (isSelectedProduct(productId)) {
       const currentProduct = productsCheckout.find(
-        (item) => item.productId === productId
+        (item) => item._id === productId
       );
       if (!currentProduct) return;
-      handleUpdateSelectedProducts(false, currentProduct);
+      handleUpdateSelectedProducts({
+        select: false,
+        increase: false,
+        product: currentProduct,
+      });
     }
   }
 
-  function handleUpdateSelectedProducts(
-    select: boolean | string,
-    product: Cart
-  ) {
-    dispatch(updateProductsCheckout({ remove: !select as boolean, product }));
+  function handleUpdateSelectedProducts({
+    select,
+    increase,
+    product,
+  }: {
+    select: boolean | string;
+    increase: boolean;
+    product: { quantity: number } & Product;
+  }) {
+    const updatedProductCheckout = updateProductsCheckout({
+      remove: !select,
+      increase,
+      newProduct: product,
+    });
+
+    dispatch(
+      saveCheckoutData({
+        ...localCheckoutData,
+        productsCheckout: updatedProductCheckout,
+      })
+    );
   }
 
   function isSelectedProduct(productId: string) {
-    return productsCheckout.some((item) => item.productId === productId);
+    return productsCheckout.some((item) => item._id === productId);
   }
 
   function getSubtotal(): number {
-    return productsCheckout.length === 0
-      ? 0
-      : productsCheckout
-          .map((item) => {
-            const findIdx = cartItems.findIndex(
-              (products) => products._id === item.productId
-            );
-            const currentItem = cartItems[findIdx];
-            return currentItem.price * item.quantity;
-          })
-          .reduce((acc, cur) => acc + cur, 0);
+    if (productsCheckout.length <= 0) return 0;
+    return productsCheckout
+      .map((item) => item.price * item.quantity)
+      .reduce((acc, cur) => acc + cur, 0);
   }
 
   if (!localCart.length) return <h1>Cart is Empty</h1>;
@@ -123,9 +165,9 @@ export default function CartPage() {
   if (!fetchStatus.success) return <h1>Error: {fetchStatus.message}</h1>;
 
   return (
-    <>
-      <div className="w-full grid grid-cols-5 mt-6 px-2">
-        <div className="col-span-5 md:col-span-3 px-4">
+    <div className="w-full pt-20">
+      <div className="w-full grid grid-cols-5 px-2">
+        <div className="col-span-5 md:col-span-3 px-1 md:px-4 mb-20 md:mb-4">
           <div className=" w-full flex justify-between items-center">
             <h1 className="text-2xl font-semibold">Cart</h1>
             <div className="flex items-center gap-2">
@@ -133,13 +175,12 @@ export default function CartPage() {
               <Checkbox
                 id="check-all"
                 onCheckedChange={(checked) => {
-                  localCart.forEach((product) => {
-                    dispatch(
-                      updateProductsCheckout({
-                        remove: !checked as boolean,
-                        product,
-                      })
-                    );
+                  renderedCartItems.forEach((product) => {
+                    handleUpdateSelectedProducts({
+                      select: checked,
+                      increase: checked as boolean,
+                      product,
+                    });
                   });
                 }}
                 checked={localCart.length === productsCheckout.length}
@@ -147,11 +188,8 @@ export default function CartPage() {
             </div>
           </div>
           <div>
-            {cartItems.map((product, i) => {
-              const quantity = localCart.find(
-                (item) => item.productId === product._id
-              )?.quantity;
-              return (
+            {renderedCartItems.length > 0 &&
+              renderedCartItems?.map((product, i) => (
                 <div
                   key={i}
                   className={cn(
@@ -160,13 +198,14 @@ export default function CartPage() {
                   )}
                 >
                   <span className="w-full h-px absolute left-0 -bottom-1 bg-muted-foreground" />
-                  <div className="pr-4">
+                  <div className="pr-2 md:pr-4">
                     <Checkbox
-                      className="size-5"
+                      className="size-4 md:size-5"
                       onCheckedChange={(e) =>
-                        handleUpdateSelectedProducts(e, {
-                          productId: product._id,
-                          quantity: quantity || 0,
+                        handleUpdateSelectedProducts({
+                          select: e,
+                          increase: true,
+                          product,
                         })
                       }
                       checked={isSelectedProduct(product._id)}
@@ -176,44 +215,46 @@ export default function CartPage() {
                     <Image
                       className="w-full object-cover aspect-square pointer-events-none"
                       src={product.image}
-                      width={200}
-                      height={200}
+                      width={100}
+                      height={100}
                       alt={product.title}
                       priority
                     />
-                    <div className="flex items-center border border-foreground rounded-full gap-2 mt-6">
+                    <div className="flex items-center border border-foreground rounded-full gap-2 mt-4 md:mt-6">
                       <Button
-                        className="rounded-full p-4"
+                        className="rounded-full p-2 md:p-4"
                         variant="ghost"
-                        onClick={() =>
-                          adjustProductQuantity(product._id, false)
-                        }
-                        disabled={quantity === 1}
+                        onClick={() => adjustProductQuantity(product, false)}
+                        disabled={product.quantity === 1}
                       >
-                        <Minus className="size-4" />
+                        <Minus className="size-3 md:size-4" />
                       </Button>
-                      <h6>{quantity}</h6>
+                      <h6 className="text-sm md:text-base">
+                        {product.quantity}
+                      </h6>
                       <Button
-                        className="rounded-full p-4"
+                        className="rounded-full p-2 md:p-4"
                         variant="ghost"
-                        onClick={() => adjustProductQuantity(product._id, true)}
+                        onClick={() => adjustProductQuantity(product, true)}
                       >
-                        <Plus className="size-4" />
+                        <Plus className="size-3 md:size-4" />
                       </Button>
                     </div>
                   </div>
-                  <div className="w-full pl-4">
-                    <h2 className="text-xl font-medium">{product.title}</h2>
-                    <h6 className="text-base text-muted-foreground">
+                  <div className="w-full pl-4  text-nowrap truncate">
+                    <h2 className="text-base md:text-xl font-medium">
+                      {product.title}
+                    </h2>
+                    <h6 className="text-sm md:text-base text-muted-foreground">
                       {product.category}
                     </h6>
-                    <h6 className="text-base mt-2">
+                    <h6 className="text-sm md:text-base mt-2">
                       {rupiah.format(product.price)}
                     </h6>
                   </div>
                   <div className="relative">
-                    <h6 className="absolute top-0 right-0">
-                      {rupiah.format(product.price * (quantity || 0))}
+                    <h6 className="text-sm md:text-base absolute top-0 right-0">
+                      {rupiah.format(product.price * (product.quantity || 0))}
                     </h6>
                     <Button
                       className="absolute bottom-0 right-0 rounded-full p-3"
@@ -224,41 +265,109 @@ export default function CartPage() {
                     </Button>
                   </div>
                 </div>
-              );
-            })}
+              ))}
           </div>
         </div>
         <div className="hidden md:block md:col-span-2 px-4">
-          <h1 className="text-2xl font-semibold mb-8">Summary</h1>
-          <div className="leading-8">
-            <div className="flex items-center justify-between">
-              <span>Subtotal</span>
-              <span>{rupiah.format(getSubtotal())}</span>
+          <div className="sticky top-20">
+            <h1 className="text-2xl font-semibold mb-8">Summary</h1>
+            <div className="leading-8">
+              <div className="flex items-center justify-between">
+                <span>Subtotal</span>
+                <span>{rupiah.format(getSubtotal())}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Discount</span>
+                <span>-</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Estimated Delivery & Handling</span>
+                <span>-</span>
+              </div>
+              <Separator className="bg-foreground my-6 h-[0.5px]" />
+              <div className="flex items-center justify-between">
+                <span>Total</span>
+                <span>{rupiah.format(getSubtotal())}</span>
+              </div>
+              <Separator className="bg-foreground my-6 h-[0.5px]" />
+              <Button
+                className="w-full rounded-full"
+                onClick={() => router.push("/checkout")}
+                disabled={productsCheckout.length === 0}
+              >
+                Checkout
+              </Button>
             </div>
-            <div className="flex items-center justify-between">
-              <span>Discount</span>
-              <span>-</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Estimated Delivery & Handling</span>
-              <span>-</span>
-            </div>
-            <Separator className="bg-foreground my-6 h-[0.5px]" />
-            <div className="flex items-center justify-between">
-              <span>Total</span>
-              <span>{rupiah.format(getSubtotal())}</span>
-            </div>
-            <Separator className="bg-foreground my-6 h-[0.5px]" />
-            <Button
-              className="w-full rounded-full"
-              onClick={() => router.push("/checkout")}
-              disabled={productsCheckout.length === 0}
-            >
-              Checkout
-            </Button>
           </div>
         </div>
+        <DrawerTotalAmount
+          subtotal={getSubtotal()}
+          total={getSubtotal()}
+          isDisableCheckout={productsCheckout.length === 0}
+        />
       </div>
-    </>
+    </div>
   );
 }
+
+const DrawerTotalAmount = ({
+  subtotal,
+  total,
+  isDisableCheckout,
+}: {
+  subtotal: number;
+  total: number;
+  isDisableCheckout: boolean;
+}) => {
+  const router = useRouter();
+
+  return (
+    <Drawer>
+      <div className="col-span-full md:hidden px-2 py-4 bg-background fixed bottom-0 left-0 right-0">
+        <DrawerTrigger asChild>
+          <Button className="w-full">Summary</Button>
+        </DrawerTrigger>
+      </div>
+      <DrawerContent>
+        <DrawerHeader className="mb-4">
+          <DrawerTitle className="text-2xl font-semibold">Summary</DrawerTitle>
+          <DrawerDescription>Summary of your order</DrawerDescription>
+        </DrawerHeader>
+        <div className="leading-8 px-4">
+          <div className="flex items-center justify-between">
+            <span>Subtotal</span>
+            <span>{rupiah.format(subtotal)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Discount</span>
+            <span>-</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Estimated Delivery & Handling</span>
+            <span>-</span>
+          </div>
+          <Separator className="bg-foreground my-6 h-[0.5px]" />
+          <div className="flex items-center justify-between">
+            <span>Total</span>
+            <span>{rupiah.format(total)}</span>
+          </div>
+          <Separator className="bg-foreground my-6 h-[0.5px]" />
+        </div>
+        <DrawerFooter className="flex justify-center items-center flex-row gap-2">
+          <DrawerClose asChild>
+            <Button variant="outline" className="w-full">
+              Cancel
+            </Button>
+          </DrawerClose>
+          <Button
+            className="w-full"
+            onClick={() => router.push("/checkout")}
+            disabled={isDisableCheckout}
+          >
+            Checkout
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  );
+};

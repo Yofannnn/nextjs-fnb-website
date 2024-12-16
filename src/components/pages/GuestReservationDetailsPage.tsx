@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { formatDate, toDateTime } from "@/lib/format-date";
+import { formatDate, formatTime, getDateAndTime } from "@/lib/format-date";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,8 +53,7 @@ import {
   TimerReset,
 } from "lucide-react";
 import { Reservation } from "@/types/order.type";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { Dispatch, SetStateAction, useEffect, useState, useActionState } from "react";
 import {
   cancelReservationAction,
   pendingReservationAction,
@@ -90,7 +89,7 @@ export default function GuestReservationDetailsPage({
                 </Button>
               </CardTitle>
               <CardDescription>
-                {formatDate(new Date(reservation.createdAt), "formatDateLong")}
+                {formatDate(reservation.createdAt, "short")}
               </CardDescription>
             </div>
             <div>
@@ -106,17 +105,14 @@ export default function GuestReservationDetailsPage({
                     Reservation Date
                   </span>
                   <span>
-                    {formatDate(
-                      new Date(reservation.reservationDate),
-                      "formatDateLong"
-                    )}
+                    {formatDate(reservation.reservationDate, "short")}
                   </span>
                 </li>
                 <li className="flex items-center justify-between">
                   <span className="text-muted-foreground">
                     Reservation Time
                   </span>
-                  <span>{toDateTime(reservation.reservationDate).time}</span>
+                  <span>{formatTime(reservation.reservationDate)}</span>
                 </li>
                 <li className="flex items-center justify-between">
                   <span className="text-muted-foreground">Party Size</span>
@@ -189,7 +185,7 @@ export default function GuestReservationDetailsPage({
             <div className="text-xs text-muted-foreground">
               Updated{" "}
               <time dateTime="2023-11-23">
-                {formatDate(reservation.updatedAt, "formatDateLong")}
+                {formatDate(reservation.updatedAt, "long")}
               </time>
             </div>
           </CardFooter>
@@ -229,7 +225,7 @@ function UpdateReservationComponent({
     token,
     reservationId: id,
   });
-  const [state, action] = useFormState(useUpdateReservation, {});
+  const [state, action] = useActionState(useUpdateReservation, {});
   const router = useRouter();
 
   useEffect(() => {
@@ -282,7 +278,7 @@ function UpdateReservationComponent({
                         min={new Date().toISOString().split("T")[0]}
                         required
                         defaultValue={
-                          toDateTime(reservation.reservationDate).date
+                          getDateAndTime(reservation.reservationDate).date
                         }
                       />
                     </div>
@@ -304,7 +300,7 @@ function UpdateReservationComponent({
                           }
                         }}
                         defaultValue={
-                          toDateTime(reservation.reservationDate).time
+                          getDateAndTime(reservation.reservationDate).time
                         }
                       />
                     </div>
@@ -394,7 +390,7 @@ function CancelReservationComponent({
     token,
     reservationId: id,
   });
-  const [state, action] = useFormState(useCancelReservation, {});
+  const [state, action] = useActionState(useCancelReservation, {});
   const router = useRouter();
 
   useEffect(() => {
@@ -482,7 +478,7 @@ function PendingReservationComponent({
     token,
     reservationId: id,
   });
-  const [state, action] = useFormState(useCancelReservation, {});
+  const [state, action] = useActionState(useCancelReservation, {});
   const router = useRouter();
 
   useEffect(() => {

@@ -12,12 +12,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "@/actions/auth.action";
-import { useFormState } from "react-dom";
-import { useEffect } from "react";
+import { useEffect, useActionState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage({ isAuth }: { isAuth: boolean }) {
-  const [state, action] = useFormState(loginAction, {});
+  const [state, action] = useActionState(loginAction, {});
   const searchParams = useSearchParams();
   const getRedirect = searchParams.get("redirect");
   const redirectTo = getRedirect?.split("_").join("/");
