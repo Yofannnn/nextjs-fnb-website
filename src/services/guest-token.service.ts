@@ -1,9 +1,9 @@
 import { JWTPayload, jwtVerify, SignJWT } from "jose";
 
-const secretKey = process.env.MANAGE_RESERVATION_SECRET_KEY;
+const secretKey = process.env.GUEST_TOKEN_SECRET_KEY;
 const encodedKey = new TextEncoder().encode(secretKey);
 
-export async function createUniqueLink(payload: JWTPayload) {
+export async function createGuestToken(payload: JWTPayload) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -11,7 +11,7 @@ export async function createUniqueLink(payload: JWTPayload) {
     .sign(encodedKey);
 }
 
-export async function verifyUniqueLink(token: string | null): Promise<{
+export async function verifyGuestToken(token: string | null): Promise<{
   valid: boolean;
   email: string | null;
   message: string;

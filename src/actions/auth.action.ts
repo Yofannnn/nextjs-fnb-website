@@ -1,12 +1,11 @@
-import { login, logout, register } from "@/lib/auth";
+"use server";
+
+import { login, logout, register } from "@/services/auth.service";
 import { formatError } from "@/lib/format-error";
 import { ActionResult } from "@/types/action-result.type";
 import { LoginSchema, RegisterSchema } from "@/validations/user.validation";
 
-export async function registerAction(
-  _: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
+export async function registerAction(_: ActionResult, formData: FormData): Promise<ActionResult> {
   const rawFormData = Object.fromEntries(formData.entries());
   const validatedFields = await RegisterSchema.safeParseAsync(rawFormData);
 
@@ -27,10 +26,7 @@ export async function registerAction(
   }
 }
 
-export async function loginAction(
-  _: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
+export async function loginAction(_: ActionResult, formData: FormData): Promise<ActionResult> {
   const rawFormData = Object.fromEntries(formData.entries());
   const validatedFields = await LoginSchema.safeParseAsync(rawFormData);
 

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { decrypt } from "@/lib/session";
+import { decrypt } from "@/services/session.service";
 import { findUserById } from "@/services/auth.service";
 
 interface VerifySession {
@@ -35,24 +35,16 @@ export const verifySession = cache(async (): Promise<VerifySession> => {
     : {
         isAuth: true,
         userId: session.userId as string,
-        role:
-          session.role === "admin" || session.role === "user"
-            ? session.role
-            : null,
+        role: session.role === "admin" || session.role === "user" ? session.role : null,
       };
 });
 
 export const getUser = cache(async (): Promise<GetUser> => {
   const { isAuth, userId } = await verifySession();
-  if (!isAuth)
-    return { success: false, message: "User not authenticated, please login." };
+  if (!isAuth) return { success: false, message: "User not authenticated, please login." };
 
   try {
-    const {
-      success,
-      message,
-      data: findUser,
-    } = await findUserById(userId as string);
+    const { success, message, data: findUser } = await findUserById(userId as string);
     if (!findUser || !success) throw new Error(message);
     const user: User = {
       _id: findUser._id,

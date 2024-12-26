@@ -1,5 +1,6 @@
 export interface Product {
-  _id: string;
+  // _id: string;
+  productId: string;
   title: string;
   price: number;
   description: string;
@@ -7,8 +8,13 @@ export interface Product {
   image: string;
   isAvailable: boolean;
   options?: string[];
-  rating?: number[];
-  reviews?: string[];
+  reviews?: {
+    userId: string;
+    rating: number;
+    review: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
   totalSales?: number;
   createdAt: Date;
   updatedAt: Date;

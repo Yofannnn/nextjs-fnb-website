@@ -63,5 +63,15 @@ export const EditProductSchema = z.object({
     .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
       message: "Only .png, .jpg, and .jpeg formats are supported",
     }),
-  isAvailable: z.boolean(),
+});
+
+export const updateProductReviewSchema = z.object({
+  rating: z
+    .number({ invalid_type_error: "Rating must be a number." })
+    .min(1, { message: "Rating must be at least 1." })
+    .int({ message: "Rating must be an integer." }),
+  review: z
+    .string()
+    .regex(/^(?!\s*$).+/, { message: "Category cant be only space" })
+    .trim(),
 });

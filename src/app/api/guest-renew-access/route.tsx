@@ -1,41 +1,33 @@
-import { createUniqueLink } from "@/lib/guest-unique-link";
+import { createGuestToken } from "@/services/guest-token.service";
 import { findUserByEmail } from "@/services/auth.service";
+import { getOnlineOrdersByEmail } from "@/services/online-order.service";
+import { getReservationByEmail } from "@/services/reservation.service";
 
 export async function POST(request: Request) {
   const { email } = await request.json();
 
   try {
     const isMember = await findUserByEmail(email);
-    if (isMember.data)
+    if (isMember)
       return new Response(
         JSON.stringify({
           status: 400,
-          statusText:
-            "You are already a member, Please login with your email and password.",
+          statusText: "You are already a member, Please login with your email and password.",
         }),
         { status: 400 }
       );
 
-    // check apa punya transaksi, reservasi, atau online oreder, kalau ngga mungkin retrun 400
+    const guestOrder = await Promise.all([getReservationByEmail(email), getOnlineOrdersByEmail(email)]);
 
-    const guestAccessToken = await createUniqueLink({ email });
+    if (!guestOrder[0].length || !guestOrder[1].length)
+      return new Response(JSON.stringify({ status: 400, statusText: "You have not made any reservation or order" }), {
+        status: 400,
+      });
 
-    // send link to customer email
+    const guestAccessToken = await createGuestToken({ email });
 
-    return new Response(
-      JSON.stringify({
-        status: 200,
-        statusText: "Success",
-        data: { guestAccessToken },
-      })
-    );
+    return new Response(JSON.stringify({ status: 200, statusText: "Success", data: { guestAccessToken } }));
   } catch (error: any) {
-    return new Response(
-      JSON.stringify({
-        status: 500,
-        statusText: error.message,
-      }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ status: 500, statusText: error.message }), { status: 500 });
   }
 }

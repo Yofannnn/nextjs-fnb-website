@@ -1,92 +1,195 @@
+"use server";
+
+import connectToDatabase from "@/database/mongoose";
 import mongoose from "mongoose";
-import ProductModel from "@/models/product.model";
+import ProductModel from "@/database/models/product.model";
+import { deleteImageService, uploadImageService } from "@/services/image.service";
+import { ProductSelection } from "@/types/order.type";
+import { Product } from "@/types/product.type";
+import { v4 as uuidv4 } from "uuid";
 
-interface Response {
-  success: boolean;
-  data: any;
-  message: string;
-}
-
-export async function createProduct(payload: object): Promise<Response> {
-  // return ProductModel.create(payload);
+export async function storeNewProductService(payload: {
+  title: string;
+  price: number;
+  description: string;
+  category: string;
+  image: File;
+  isAvailable: boolean;
+}) {
+  const newProductId = uuidv4();
   try {
-    const data = await ProductModel.create(payload);
-    if (!data) throw new Error("Failed to create new product.");
-    return { success: true, data, message: "Success to create new product." };
+    const blob = await uploadImageService(newProductId, payload.image);
+    if (!blob) throw new Error("Failed to upload image.");
+
+    await connectToDatabase();
+
+    const newProduct = await ProductModel.create({ ...payload, productId: newProductId, image: blob.url });
+    if (!newProduct) throw new Error("Failed to create new product.");
+
+    return { success: true, message: "Success to create new product" };
   } catch (error: any) {
-    return { success: false, data: null, message: error.message };
+    return { success: false, message: error.message as string };
   }
 }
 
-export async function updateProductById(
-  id: string,
-  payload: object
-): Promise<Response> {
+export async function updateProductDetailsService(
+  productId: string,
+  payload: {
+    title: string;
+    price: number;
+    description: string;
+    category: string;
+    image?: File;
+  }
+) {
   try {
-    const data = await ProductModel.findByIdAndUpdate(
-      id,
-      { $set: payload },
-      { new: true }
-    );
-    if (!data) throw new Error("Failed to update product.");
-    return { success: true, data, message: "Success to update product." };
+    await connectToDatabase();
+
+    if (payload.image) {
+      const blob = await uploadImageService(productId, payload.image);
+      if (!blob.success) throw new Error(blob.message);
+
+      const updatedProduct = await ProductModel.findOneAndUpdate(
+        { productId },
+        { ...payload, image: blob.url },
+        { new: true }
+      );
+      if (!updatedProduct) throw new Error("Failed to update product.");
+
+      return { success: true, message: "Success to update product" };
+    }
+
+    const updatedProduct = await ProductModel.findOneAndUpdate({ productId }, { ...payload }, { new: true });
+    if (!updatedProduct) throw new Error("Failed to update product.");
+
+    return { success: true, message: "Success to update product" };
   } catch (error: any) {
-    return { success: false, data: null, message: error.message };
+    return { success: false, message: error.message as string };
   }
 }
 
-export async function deleteProductById(id: string): Promise<Response> {
+export async function updateProductAvailabilityService(productId: string, isAvailable: boolean) {
   try {
-    const data = await ProductModel.findByIdAndDelete(id);
-    if (!data) throw new Error("Failed to delete product.");
-    return { success: true, data, message: "Success to delete product." };
+    await connectToDatabase();
+
+    const updatedProduct = await ProductModel.findOneAndUpdate({ productId }, { isAvailable }, { new: true });
+    if (!updatedProduct) throw new Error("Failed to update product.");
+
+    return { success: true, message: "Success to update product" };
   } catch (error: any) {
-    return { success: false, data: null, message: error.message };
+    return { success: false, message: error.message as string };
   }
 }
 
-export async function getAllProducts(): Promise<Response> {
+export async function updateProductReviewService(
+  action: "add" | "update" | "delete",
+  productId: string,
+  payload: { userId: string; rating: number; review: string }
+) {
   try {
-    const data = await ProductModel.find();
-    if (!data) throw new Error("Failed to fetch products.");
-    return { success: true, data, message: "Success to fetch products." };
+    await connectToDatabase();
+
+    if (action === "add") {
+      const updatedProduct = await ProductModel.findOneAndUpdate(
+        { productId },
+        { $push: { reviews: payload } },
+        { new: true }
+      );
+      if (!updatedProduct) throw new Error("Failed to add product review.");
+
+      return { success: true, message: "Success to add product review" };
+    }
+
+    if (action === "update") {
+      const updatedProduct = await ProductModel.findOneAndUpdate(
+        { productId, "reviews.userId": payload.userId },
+        { $set: { "reviews.$.rating": payload.rating, "reviews.$.review": payload.review } },
+        { new: true }
+      );
+      if (!updatedProduct) throw new Error("Failed to update product review.");
+
+      return { success: true, message: "Success to update product review." };
+    }
+
+    if (action === "delete") {
+      const updatedProduct = await ProductModel.findOneAndUpdate(
+        { productId },
+        { $pull: { reviews: { userId: payload.userId } } },
+        { new: true }
+      );
+      if (!updatedProduct) throw new Error("Failed to delete product review.");
+
+      return { success: true, message: "Success to delete product review." };
+    }
+
+    throw new Error("Invalid action.");
   } catch (error: any) {
-    return { success: false, data: null, message: error.message };
+    return { success: false, message: error.message as string };
   }
 }
 
-export async function getProductById(id: string): Promise<Response> {
+export async function deleteProductById(productId: string, imageUrl: string) {
   try {
-    const data = await ProductModel.findById(id);
-    if (!data) throw new Error("Failed to fetch product.");
-    return { success: true, data, message: "Success to fetch product." };
+    const deleteProduct = await Promise.all([
+      ProductModel.findOneAndDelete({ productId }),
+      deleteImageService(imageUrl),
+    ]);
+    if (!deleteProduct[0] || !deleteProduct[1].success) throw new Error("Failed to delete product.");
+
+    return { success: true, message: "Success to delete product" };
   } catch (error: any) {
-    return { success: false, data: null, message: error.message };
+    return { success: false, message: error.message as string };
   }
 }
 
-export async function getProductsByCategory(
-  category: string
-): Promise<Response> {
+export async function getProductsSelectionFromDb(
+  itemsFromClient: { productId: string; quantity: number }[]
+): Promise<ProductSelection[] | []> {
+  if (itemsFromClient.length === 0) return [];
+
   try {
-    const data = await ProductModel.find({ category });
-    if (!data) throw new Error("Failed to fetch products.");
-    return { success: true, data, message: "Success to fetch products." };
+    const productsId = itemsFromClient.map((item) => item.productId);
+
+    const someProductsFromDB = await getSomeProductsById(productsId);
+    if (!someProductsFromDB) return [];
+
+    const productsMap = new Map(someProductsFromDB.map((product: Product) => [product.productId, product]));
+
+    const products = itemsFromClient
+      .map((item) => {
+        const product = productsMap.get(item.productId) as Product;
+        return product
+          ? {
+              productId: item.productId,
+              quantity: item.quantity,
+              price: product.price,
+            }
+          : null;
+      })
+      .filter((item): item is ProductSelection => item !== null);
+
+    return products || [];
   } catch (error: any) {
-    return { success: false, data: null, message: error.message };
+    return error.message;
   }
 }
 
-export async function getSomeProductsById(ids: string[]): Promise<Response> {
-  try {
-    const objectIds = ids
-      .filter((id) => mongoose.Types.ObjectId.isValid(id))
-      .map((id) => new mongoose.Types.ObjectId(id));
-    if (objectIds.length === 0) throw new Error("No valid ObjectIds provided");
-    const data = await ProductModel.find({ _id: { $in: objectIds } });
-    if (!data) throw new Error("Failed to fetch products.");
-    return { success: true, data, message: "Success to fetch products." };
-  } catch (error: any) {
-    return { success: false, data: null, message: error.message };
-  }
+export async function getAllProducts() {
+  return await ProductModel.find();
+}
+
+export async function getProductById(id: string) {
+  return await ProductModel.findById(id);
+}
+
+export async function getProductsByCategory(category: string) {
+  return await ProductModel.find({ category });
+}
+
+export async function getSomeProductsById(ids: string[]) {
+  const objectIds = ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) return;
+  return await ProductModel.find({ _id: { $in: objectIds } });
 }
