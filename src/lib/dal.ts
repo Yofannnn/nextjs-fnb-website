@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { decrypt } from "@/services/session.service";
+import { verifyToken } from "@/services/session.service";
 import { findUserById } from "@/services/auth.service";
 
 interface VerifySession {
@@ -28,7 +28,7 @@ interface User {
 
 export const verifySession = cache(async (): Promise<VerifySession> => {
   const cookie = (await cookies()).get("session")?.value;
-  const session = await decrypt(cookie);
+  const session = await verifyToken(cookie);
 
   return !session?.userId
     ? { isAuth: false, userId: null, role: null }

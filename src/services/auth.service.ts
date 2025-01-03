@@ -4,7 +4,7 @@ import connectToDatabase from "@/database/mongoose";
 import UserModel from "@/database/models/user.model";
 import { redirect } from "next/navigation";
 import { comparePassword, hashPassword } from "@/lib/hash";
-import { createSession, deleteSession } from "@/services/session.service";
+import { createSessionCookie, clearSessionCookie } from "@/services/session.service";
 import { LoginSchema, RegisterSchema } from "@/validations/user.validation";
 
 export async function register(data: { name: string; email: string; address: string; password: string }) {
@@ -30,7 +30,7 @@ export async function register(data: { name: string; email: string; address: str
     });
     if (!newUser) throw new Error("An error occurred while creating your account");
 
-    await createSession(newUser._doc._id, newUser._doc.role);
+    await createSessionCookie(newUser._doc._id, newUser._doc.role);
     redirect("/dashboard");
   } catch (error: any) {
     return error.message;
@@ -56,7 +56,7 @@ export async function login(data: { email: string; password: string }) {
       throw new Error("Password is incorrect.");
     }
 
-    await createSession(user._id, user.role);
+    await createSessionCookie(user._id, user.role);
     redirect("/dashboard");
   } catch (error: any) {
     return error.message;
@@ -64,7 +64,7 @@ export async function login(data: { email: string; password: string }) {
 }
 
 export async function logout() {
-  deleteSession();
+  clearSessionCookie();
   redirect("/login");
 }
 
