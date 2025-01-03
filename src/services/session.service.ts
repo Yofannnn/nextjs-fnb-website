@@ -14,7 +14,7 @@ const COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 1 day
 
 // Types
 export interface SessionCookiePayload {
-  userId: string;
+  email: string;
   role: UserRole.Admin | UserRole.Member | UserRole.Guest;
 }
 
@@ -75,9 +75,9 @@ export async function verifyToken(token: string = ""): Promise<JWTPayload | null
  * @example
  * await createSessionCookie("12345", "member");
  */
-export async function createSessionCookie(userId: string, role: UserRole): Promise<void> {
+export async function createSessionCookie({ email, role }: SessionCookiePayload): Promise<void> {
   const expiresAt = new Date(Date.now() + COOKIE_MAX_AGE);
-  const token = await generateToken({ userId, role });
+  const token = await generateToken({ email, role });
 
   (await cookies()).set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,

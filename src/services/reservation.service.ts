@@ -2,28 +2,37 @@
 
 import connectToDatabase from "@/database/mongoose";
 import ReservationModel from "@/database/models/reservation.model";
-import { findUserByEmail } from "@/services/auth.service";
-import { createGuestToken } from "@/services/guest-token.service";
 import { getProductsSelectionFromDb } from "@/services/product.service";
 import { initializeTransactionService, settlementTransactionService } from "@/services/transaction.service";
-import { Reservation } from "@/types/order.type";
+import { InitializeReservationPayload, Reservation } from "@/types/order.type";
 import { getDiscount, getReservationDownPayment, getSubtotal } from "@/lib/calculation";
 import { v4 as uuidv4 } from "uuid";
+import { verifySession } from "@/lib/dal";
+import { UserRole } from "@/types/user.type";
+import { createSessionCookie } from "./session.service";
 
 type Response<T = any> =
   | { success: true; message: string; data: T }
   | { success: false; message: string; data?: undefined };
 
-export async function initializeBookingService(payload: {
-  customerName: string;
-  customerEmail: string;
-  reservationDate: Date;
-  partySize: number;
-  seatingPreference: "indoor" | "outdoor";
-  paymentStatus: "downPayment" | "paid";
-  specialRequest?: string | undefined;
-  menus?: { productId: string; quantity: number }[];
-}): Promise<Response> {
+async function checkIsConflictReservation(date: Date, seatingPreference: "indoor" | "outdoor") {
+  const listReservation = await getReservationList();
+  const confirmedReservation = listReservation.filter((reservation) => reservation.reservationStatus === "confirmed");
+  const sixHoursInMillis = 6 * 60 * 60 * 1000;
+
+  return confirmedReservation.some((reservation: Reservation) => {
+    const existingTime = new Date(reservation.reservationDate).getTime();
+    const newTime = new Date(date).getTime();
+
+    return (
+      Math.abs(existingTime - newTime) < sixHoursInMillis &&
+      reservation.reservationDate === date &&
+      reservation.seatingPreference === seatingPreference
+    );
+  });
+}
+
+export async function initializeReservationService(payload: InitializeReservationPayload): Promise<Response> {
   try {
     await connectToDatabase();
 
@@ -38,7 +47,12 @@ export async function initializeBookingService(payload: {
       menus,
     } = payload;
 
-    const isMember = await findUserByEmail(customerEmail);
+    // Check if the time, date, and seating have already been booked within a 6-hour window
+    const conflictReservation = await checkIsConflictReservation(reservationDate, seatingPreference);
+    if (conflictReservation) throw new Error("Sorry, your time, date, and seating have already been booked");
+
+    const session = await verifySession();
+    const isMember = session?.role === UserRole.Member;
     const reservationId = uuidv4();
     const menusFromDb = await getProductsSelectionFromDb(menus || []);
     const reservationType = menusFromDb.length > 0 ? "include-food" : "table-only";
@@ -82,14 +96,14 @@ export async function initializeBookingService(payload: {
 
     // store reservation to database
     const reservation = await ReservationModel.create(reservationPayload);
+    if (!reservation) throw new Error("Reservation failed");
 
-    if (!reservation) return { success: false, message: "Reservation failed" };
+    // set cookies if user is not member(guest)
+    if (!isMember) await createSessionCookie({ email: customerEmail, role: UserRole.Guest });
 
-    const guestAccessToken = await createGuestToken({ email: customerEmail });
+    // logic send email to customer
 
-    const dataResponse = isMember ? { token: midtransPaymentToken } : { token: midtransPaymentToken, guestAccessToken };
-
-    return { success: true, message: "Reservation success", data: dataResponse };
+    return { success: true, message: "Reservation success", data: midtransPaymentToken };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -112,22 +126,6 @@ export async function confirmReservationService(reservationId: string) {
   } catch (error: any) {
     return { success: false, message: error.message };
   }
-}
-
-export async function checkIsConflictReservation(date: Date, seatingPreference: "indoor" | "outdoor") {
-  const listReservation = await getReservationList();
-  const sixHoursInMillis = 6 * 60 * 60 * 1000;
-
-  return listReservation.some((reservation: Reservation) => {
-    const existingTime = new Date(reservation.reservationDate).getTime();
-    const newTime = new Date(date).getTime();
-
-    return (
-      Math.abs(existingTime - newTime) < sixHoursInMillis &&
-      reservation.reservationDate === date &&
-      reservation.seatingPreference === seatingPreference
-    );
-  });
 }
 
 export async function getReservationById(reservationId: string) {

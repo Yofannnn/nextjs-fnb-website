@@ -1,29 +1,24 @@
 import connectToDatabase from "@/database/mongoose";
 import OnlineOrderModel from "@/database/models/online-order.model";
-import { findUserByEmail } from "@/services/auth.service";
-import { createGuestToken } from "@/services/guest-token.service";
 import { getProductsSelectionFromDb } from "@/services/product.service";
 import { initializeTransactionService, settlementTransactionService } from "@/services/transaction.service";
 import { getDiscount, getShippingCost, getSubtotal } from "@/lib/calculation";
 import { v4 as uuidv4 } from "uuid";
+import { InitializeOnlineOrderPayload } from "@/types/order.type";
+import { verifySession } from "@/lib/dal";
+import { UserRole } from "@/types/user.type";
+import { createSessionCookie } from "./session.service";
 
 type Response<T = any> =
   | { success: true; message: string; data: T }
   | { success: false; message: string; data?: undefined };
 
-export async function initializeOnlineOrderService(payload: {
-  customerName: string;
-  customerEmail: string;
-  customerAddress: string;
-  deliveryDate: Date;
-  items: { productId: string; quantity: number }[];
-  note?: string;
-}): Promise<Response> {
+export async function initializeOnlineOrderService(payload: InitializeOnlineOrderPayload): Promise<Response> {
   try {
     await connectToDatabase();
 
-    const isMember = await findUserByEmail(payload.customerEmail);
-
+    const session = await verifySession();
+    const isMember = session?.role === UserRole.Member;
     const orderId = uuidv4();
     const { customerName, customerEmail, customerAddress, deliveryDate, note, items } = payload;
     const itemsFromDb = await getProductsSelectionFromDb(items);
@@ -63,13 +58,11 @@ export async function initializeOnlineOrderService(payload: {
     const onlineOrder = await OnlineOrderModel.create(onlineOrderPayload);
     if (!onlineOrder) throw new Error("Sorry, we can't create your online order.");
 
-    const guestAccessToken = await createGuestToken({ email: customerEmail });
+    if (!isMember) await createSessionCookie({ email: customerEmail, role: UserRole.Guest });
 
-    const dataResponse = isMember
-      ? { transactionId: midtransPaymentToken }
-      : { transactionId: midtransPaymentToken, guestAccessToken };
+    // logic send email to user
 
-    return { success: true, message: "Success.", data: dataResponse };
+    return { success: true, message: "Success.", data: midtransPaymentToken };
   } catch (error: any) {
     return { success: false, message: error.message };
   }

@@ -21,6 +21,17 @@ export interface Reservation {
   updatedAt: Date;
 }
 
+export interface InitializeReservationPayload {
+  customerName: string;
+  customerEmail: string;
+  reservationDate: Date;
+  partySize: number;
+  seatingPreference: "indoor" | "outdoor";
+  paymentStatus: "downPayment" | "paid";
+  specialRequest?: string | undefined;
+  menus?: { productId: string; quantity: number }[];
+}
+
 export interface OnlineOrder {
   orderId: string;
   customerName: string;
@@ -34,17 +45,19 @@ export interface OnlineOrder {
   discount: number;
   totalAmount: number;
   transactionId: string;
-  orderStatus:
-    | "pending"
-    | "confirmed"
-    | "processing"
-    | "shipping"
-    | "delivered"
-    | "cancelled"
-    | "expired";
+  orderStatus: "pending" | "confirmed" | "processing" | "shipping" | "delivered" | "cancelled" | "expired";
   reasonCancellation?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface InitializeOnlineOrderPayload {
+  customerName: string;
+  customerEmail: string;
+  customerAddress: string;
+  deliveryDate: Date;
+  items: { productId: string; quantity: number }[];
+  note?: string;
 }
 
 export interface ProductSelection {

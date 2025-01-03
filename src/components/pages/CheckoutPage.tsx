@@ -1,45 +1,46 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { AppDispatch, RootState } from "@/redux/store"
-import { User } from "@/types/user.type"
-import { useDispatch, useSelector } from "react-redux"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { TransactionSuccess } from "@/types/transaction.type"
-import { Textarea } from "@/components/ui/textarea"
-import { handleTransactionComplete } from "@/midtrans/init"
-import Image from "next/image"
-import { rupiah } from "@/lib/format-currency"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
-import { clearCheckoutData, saveCheckoutData } from "@/redux/slice/checkout.slice"
+import { Button } from "@/components/ui/button";
+import { AppDispatch, RootState } from "@/redux/store";
+import { User } from "@/types/user.type";
+import { useDispatch, useSelector } from "react-redux";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { TransactionSuccess } from "@/types/transaction.type";
+import { Textarea } from "@/components/ui/textarea";
+import { handleTransactionComplete } from "@/midtrans/init";
+import Image from "next/image";
+import { rupiah } from "@/lib/format-currency";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { clearCheckoutData, saveCheckoutData } from "@/redux/slice/checkout.slice";
+import { initializeOnlineOrderAction } from "@/actions/online-order.action";
 
 export default function CheckoutPage({ isAuth, user }: { isAuth: boolean; user: Omit<User, "password"> | undefined }) {
-  const { toast } = useToast()
-  const router = useRouter()
-  const dispatch: AppDispatch = useDispatch()
-  const localCheckoutData = useSelector((state: RootState) => state.clientCheckoutData)
+  const { toast } = useToast();
+  const router = useRouter();
+  const dispatch: AppDispatch = useDispatch();
+  const localCheckoutData = useSelector((state: RootState) => state.clientCheckoutData);
 
-  const { customerName, customerEmail, customerAddress, deliveryDate, note, productsCheckout } = localCheckoutData
+  const { customerName, customerEmail, customerAddress, deliveryDate, note, productsCheckout } = localCheckoutData;
 
   function getSubtotal(): number {
     return productsCheckout.length === 0
       ? 0
-      : productsCheckout.map((item) => item.price * item.quantity).reduce((acc, cur) => acc + cur, 0)
+      : productsCheckout.map((item) => item.price * item.quantity).reduce((acc, cur) => acc + cur, 0);
   }
 
   function getDiscount(): number {
-    const discount = 10 // 10 percent
-    return !isAuth ? 0 : (getSubtotal() * discount) / 100
+    const discount = 10; // 10 percent
+    return !isAuth ? 0 : (getSubtotal() * discount) / 100;
   }
 
   async function handleCheckout(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+    e.preventDefault();
 
-    const form = new FormData(e.currentTarget)
+    const form = new FormData(e.currentTarget);
     const body = {
       customerName: isAuth ? user?.name : form.get("customerName"),
       customerEmail: isAuth ? user?.email : form.get("customerEmail"),
@@ -50,59 +51,48 @@ export default function CheckoutPage({ isAuth, user }: { isAuth: boolean; user: 
         quantity: item.quantity,
       })),
       note: form.get("note") || undefined,
-    }
+    };
 
     try {
-      const response = await fetch(`/api/online-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.statusText)
-      const { transactionId, guestAccessToken } = result.data
+      const action = await initializeOnlineOrderAction(body);
+      const { transactionId } = action?.data;
 
       window.snap.pay(transactionId, {
         onSuccess: async function (result: TransactionSuccess) {
           toast({
             title: "Order Success",
             description: "Thank you for ordering with us",
-          })
-          await handleTransactionComplete(user?._id || guestAccessToken, result.order_id, "online-order")
-          router.push(
-            isAuth
-              ? `/dashboard/online-order/${result.order_id}`
-              : `/guest/online-order/${guestAccessToken}/${result.order_id}`
-          )
+          });
+          await handleTransactionComplete(user?._id || guestAccessToken, result.order_id, "online-order");
+          router.push(isAuth ? `/dashboard/online-order/${result.order_id}` : `/guest/online-order/${result.order_id}`);
           // dispatch(clearCheckoutData());
         },
         onPending: function (result: any) {
-          router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction/${guestAccessToken}`)
+          router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction`);
         },
         onError: function (result: any) {
           toast({
             variant: "destructive",
             title: "Uh oh! Something went wrong.",
             description: result,
-          })
+          });
         },
         onClose: function () {
-          router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction/${guestAccessToken}`)
+          router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction`);
 
-          dispatch(clearCheckoutData())
+          dispatch(clearCheckoutData());
         },
-      })
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
         description: error.message,
-      })
+      });
     }
   }
 
-  if (!productsCheckout.length) return <div>Cart is empty please select item to checkout</div>
+  if (!productsCheckout.length) return <div>Cart is empty please select item to checkout</div>;
 
   return (
     <div className="w-full pt-20">
@@ -269,5 +259,5 @@ export default function CheckoutPage({ isAuth, user }: { isAuth: boolean; user: 
         </div>
       </div>
     </div>
-  )
+  );
 }

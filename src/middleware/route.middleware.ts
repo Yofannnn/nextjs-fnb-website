@@ -11,7 +11,7 @@ export async function routeApiMiddleware(request: NextRequest) {
 
     if (!payload) return new Response(JSON.stringify({ status: 403, statusText: "Forbidden" }), { status: 403 });
 
-    request.user = { userId: payload.userId as string, role: payload.role as UserRole };
+    request.user = { email: payload.email as string, role: payload.role as UserRole };
     return NextResponse.next();
   } catch (error) {
     return new Response(JSON.stringify({ status: 401, statusText: "Unauthorized" }), { status: 401 });

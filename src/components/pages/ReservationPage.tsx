@@ -1,29 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalProvider,
-} from "@/components/ui/animated-modal";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ModalBody, ModalContent, ModalFooter, ModalProvider } from "@/components/ui/animated-modal";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ToastAction } from "@/components/ui/toast";
@@ -35,15 +17,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AppDispatch, RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  clearClientReservationDetails,
-  saveClientReservationDetails,
-} from "@/redux/slice/reservation.slice";
+import { clearClientReservationDetails, saveClientReservationDetails } from "@/redux/slice/reservation.slice";
 import { Product } from "@/types/product.type";
 import { User } from "@/types/user.type";
 import { TransactionSuccess } from "@/types/transaction.type";
 import { handleTransactionComplete } from "@/midtrans/init";
 import { useToast } from "@/hooks/use-toast";
+import { initializeReservationAction } from "@/actions/reservation.action";
 
 export default function ReservationPage({
   isAuth,
@@ -55,9 +35,7 @@ export default function ReservationPage({
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const clientReservationDetails = useSelector(
-    (state: RootState) => state.clientReservationData
-  );
+  const clientReservationDetails = useSelector((state: RootState) => state.clientReservationData);
 
   const {
     customerEmail,
@@ -113,16 +91,8 @@ export default function ReservationPage({
     };
 
     try {
-      const response = await fetch(`/api/reservation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.statusText);
-      const { token, guestAccessToken } = result.data;
+      const action = await initializeReservationAction(body);
+      const { token } = action.data;
 
       window.snap.pay(token, {
         onSuccess: async function (result: TransactionSuccess) {
@@ -130,23 +100,11 @@ export default function ReservationPage({
             title: "Booking Success",
             description: "Thank you for booking with us",
           });
-          await handleTransactionComplete(
-            user?._id || guestAccessToken,
-            result.order_id,
-            "reservation"
-          );
-          router.push(
-            isAuth
-              ? `/dashboard/reservation/${result.order_id}`
-              : `/guest/reservation/${guestAccessToken}/${result.order_id}`
-          );
+          await handleTransactionComplete(user?._id || guestAccessToken, result.order_id, "reservation");
+          router.push(isAuth ? `/dashboard/reservation/${result.order_id}` : `/guest/reservation/${result.order_id}`);
         },
         onPending: function (result: any) {
-          router.push(
-            isAuth
-              ? `/dashboard/transaction`
-              : `/guest/transaction/${guestAccessToken}`
-          );
+          router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction`);
         },
         onError: function (result: any) {
           toast({
@@ -156,11 +114,7 @@ export default function ReservationPage({
           });
         },
         onClose: function () {
-          router.push(
-            isAuth
-              ? `/dashboard/transaction`
-              : `/guest/transaction/${guestAccessToken}`
-          );
+          router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction`);
         },
       });
       dispatch(clearClientReservationDetails());
@@ -216,9 +170,7 @@ export default function ReservationPage({
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Reservation</CardTitle>
-            <CardDescription>
-              Please fill out this form to reserve a table
-            </CardDescription>
+            <CardDescription>Please fill out this form to reserve a table</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleBooking}>
@@ -228,10 +180,7 @@ export default function ReservationPage({
                     <div className="grid gap-2">
                       <div className="flex items-center">
                         <Label htmlFor="customerEmail">Email</Label>
-                        <Link
-                          href="/register?redirect=reservation"
-                          className="ml-auto inline-block text-sm underline"
-                        >
+                        <Link href="/register?redirect=reservation" className="ml-auto inline-block text-sm underline">
                           Create Member Pass?
                         </Link>
                       </div>
@@ -413,9 +362,7 @@ export default function ReservationPage({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="downPayment">
-                            Down Payment
-                          </SelectItem>
+                          <SelectItem value="downPayment">Down Payment</SelectItem>
                           <SelectItem value="paid">Paid</SelectItem>
                         </SelectGroup>
                       </SelectContent>
@@ -459,9 +406,7 @@ export default function ReservationPage({
 
 function MenuForReservation() {
   const dispatch: AppDispatch = useDispatch();
-  const clientReservationData = useSelector(
-    (state: RootState) => state.clientReservationData
-  );
+  const clientReservationData = useSelector((state: RootState) => state.clientReservationData);
   const { menus } = clientReservationData;
 
   const adjustProductQuantity = (product: Product, increase: boolean) => {
@@ -470,9 +415,7 @@ function MenuForReservation() {
 
     if (increase) {
       updatedMenus = [...menus].map((menu) =>
-        menu._id === product._id
-          ? { ...menu, quantity: menu.quantity + 1 }
-          : menu
+        menu._id === product._id ? { ...menu, quantity: menu.quantity + 1 } : menu
       );
       updatedClientReservationData = {
         ...clientReservationData,
@@ -480,9 +423,7 @@ function MenuForReservation() {
       };
     } else {
       updatedMenus = [...menus].map((menu) =>
-        menu._id === product._id
-          ? { ...menu, quantity: menu.quantity - 1 }
-          : menu
+        menu._id === product._id ? { ...menu, quantity: menu.quantity - 1 } : menu
       );
       updatedClientReservationData = {
         ...clientReservationData,
@@ -509,10 +450,7 @@ function MenuForReservation() {
         <div className="text-center mt-4 text-xl font-semibold">No Menu</div>
       ) : (
         menus.map((item, i) => (
-          <div
-            key={i}
-            className="flex outline-1 outline-white px-0 md:px-3 py-8 rounded-2xl mb-2 relative"
-          >
+          <div key={i} className="flex outline-1 outline-white px-0 md:px-3 py-8 rounded-2xl mb-2 relative">
             <span className="w-full h-px absolute left-0 -bottom-1 bg-muted-foreground" />
             <div className="max-w-[min-content]">
               <Image
@@ -544,12 +482,8 @@ function MenuForReservation() {
             </div>
             <div className="w-full pl-4">
               <h2 className="text-base md:text-lg font-medium">{item.title}</h2>
-              <h6 className="text-sm md:text-base text-muted-foreground">
-                {item.category}
-              </h6>
-              <h6 className="text-sm md:text-base mt-2">
-                {rupiah.format(item.price)}
-              </h6>
+              <h6 className="text-sm md:text-base text-muted-foreground">{item.category}</h6>
+              <h6 className="text-sm md:text-base mt-2">{rupiah.format(item.price)}</h6>
             </div>
             <div className="relative">
               <h6 className="text-sm md:text-base absolute top-0 right-0">
@@ -572,9 +506,7 @@ function MenuForReservation() {
 
 const ModalMenu = () => {
   const dispatch: AppDispatch = useDispatch();
-  const clientReservationData = useSelector(
-    (state: RootState) => state.clientReservationData
-  );
+  const clientReservationData = useSelector((state: RootState) => state.clientReservationData);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [menus, setMenus] = useState<{
     loading: boolean;
@@ -618,9 +550,7 @@ const ModalMenu = () => {
 
   const handleAddItem = (product: Product) => {
     const { menus } = clientReservationData;
-    const findIndexProduct = menus?.findIndex(
-      (item) => item._id === product._id
-    );
+    const findIndexProduct = menus?.findIndex((item) => item._id === product._id);
 
     let updatedMenus;
     if (findIndexProduct !== -1) {
@@ -659,10 +589,7 @@ const ModalMenu = () => {
               </div>
             ) : (
               menus.data.map((menu, i) => (
-                <Card
-                  key={i}
-                  className="relative col-span-1 p-3 rounded-[30px]"
-                >
+                <Card key={i} className="relative col-span-1 p-3 rounded-[30px]">
                   <div className="rounded-[21px] overflow-hidden">
                     <Image
                       src={menu.image}
@@ -672,15 +599,9 @@ const ModalMenu = () => {
                       className="w-full h-[230px] lg:h-[300px] object-cover object-center"
                     />
                   </div>
-                  <h6 className="text-lg md:text-xl font-medium mt-7">
-                    {menu.title}
-                  </h6>
-                  <p className="text-muted-foreground mt-1 text-xs md:text-sm">
-                    {menu.category}
-                  </p>
-                  <p className="text-sm md:text-base mt-2 mb-4">
-                    {rupiah.format(menu.price)}
-                  </p>
+                  <h6 className="text-lg md:text-xl font-medium mt-7">{menu.title}</h6>
+                  <p className="text-muted-foreground mt-1 text-xs md:text-sm">{menu.category}</p>
+                  <p className="text-sm md:text-base mt-2 mb-4">{rupiah.format(menu.price)}</p>
                   <Button
                     className="mb-4 w-full md:mb-0 md:w-fit md:absolute md:bottom-4 md:right-4 rounded-full"
                     onClick={() => handleAddItem(menu)}

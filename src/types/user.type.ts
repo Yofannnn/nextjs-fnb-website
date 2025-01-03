@@ -5,6 +5,8 @@ export interface User {
   address: string;
   password: string;
   role?: UserRole;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export enum UserRole {
