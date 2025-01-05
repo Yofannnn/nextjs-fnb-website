@@ -8,6 +8,9 @@ export async function GET(request: Request) {
   const accessId = searchParams.get("accessId"); // user === userId, guest === guestAccessToken
   const reservationId = searchParams.get("reservationId");
 
+  // const email = request.headers.get("X-User-Email");
+  // const role = request.headers.get("X-User-Role");
+
   try {
     await connectToDatabase();
 

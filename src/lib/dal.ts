@@ -5,8 +5,11 @@ import { verifyToken } from "@/services/session.service";
 import { findUserByEmail } from "@/services/auth.service";
 import { User } from "@/types/user.type";
 
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME;
+if (!SESSION_COOKIE_NAME) throw new Error("SESSION_COOKIE_NAME is not defined in environment variables.");
+
 export const verifySession = cache(async () => {
-  const cookie = (await cookies()).get("session")?.value;
+  const cookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   return await verifyToken(cookie);
 });
 

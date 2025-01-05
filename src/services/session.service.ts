@@ -5,11 +5,10 @@ import { UserRole } from "@/types/user.type";
 
 // Constants
 const SESSION_SECRET = process.env.SESSION_SECRET;
-if (!SESSION_SECRET) {
-  throw new Error("SESSION_SECRET is not defined in environment variables.");
-}
+if (!SESSION_SECRET) throw new Error("SESSION_SECRET is not defined in environment variables.");
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME;
+if (!SESSION_COOKIE_NAME) throw new Error("SESSION_COOKIE_NAME is not defined in environment variables.");
 const ENCODED_SECRET_KEY = new TextEncoder().encode(SESSION_SECRET);
-const SESSION_COOKIE_NAME = "session";
 const COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 1 day
 
 // Types

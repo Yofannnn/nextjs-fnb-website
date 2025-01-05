@@ -28,7 +28,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { ListFilter } from "lucide-react";
-import { formatDate, toDateTime } from "@/lib/format-date";
+import { formatDate, formatTime } from "@/lib/format-date";
 import { rupiah } from "@/lib/format-currency";
 import { useState } from "react";
 
@@ -134,7 +134,7 @@ export default function MemberReservationListPage({
                         )}
                       </TableCell>
                       <TableCell>
-                        {toDateTime(reservation.reservationDate).time}
+                        {formatTime(reservation.reservationDate)}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <Badge className="text-xs" variant="outline">

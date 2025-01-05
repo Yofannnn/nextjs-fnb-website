@@ -46,6 +46,7 @@ export async function updateProductDetailsService(
     await connectToDatabase();
 
     if (payload.image) {
+      // overwriting the image at vercel blob
       const blob = await uploadImageService(productId, payload.image);
       if (!blob.success) throw new Error(blob.message);
 
