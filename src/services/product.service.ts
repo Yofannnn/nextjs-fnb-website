@@ -16,7 +16,8 @@ export async function storeNewProductService(payload: {
   image: File;
   isAvailable: boolean;
 }) {
-  const newProductId = uuidv4();
+  const newProductId = `product-${uuidv4()}`;
+
   try {
     const blob = await uploadImageService(newProductId, payload.image);
     if (!blob) throw new Error("Failed to upload image.");

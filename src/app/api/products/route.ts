@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get("productId");
   const category = searchParams.get("category");
-  const productsId = searchParams.get("productsId");
+  const cart = searchParams.get("cart");
 
   try {
     await connectToDatabase();
@@ -32,8 +32,8 @@ export async function GET(request: Request) {
       });
     }
 
-    if (productsId) {
-      const products = await getSomeProductsById(productsId.split("-"));
+    if (cart) {
+      const products = await getSomeProductsById(cart.split("-"));
 
       if (!products)
         return new Response(JSON.stringify({ status: 404, statusText: "Failed to retrieve products." }), {

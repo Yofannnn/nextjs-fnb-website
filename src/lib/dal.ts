@@ -1,17 +1,11 @@
 import "server-only";
 import { cache } from "react";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/services/session.service";
 import { findUserByEmail } from "@/services/auth.service";
 import { User } from "@/types/user.type";
+import { verifySession } from "@/services/session.service";
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME;
 if (!SESSION_COOKIE_NAME) throw new Error("SESSION_COOKIE_NAME is not defined in environment variables.");
-
-export const verifySession = cache(async () => {
-  const cookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  return await verifyToken(cookie);
-});
 
 export const getUser = cache(
   async (): Promise<{
@@ -23,8 +17,8 @@ export const getUser = cache(
     if (!session) return { success: false, message: "User not authenticated, please login." };
 
     try {
-      const { success, message, data: findUser } = await findUserByEmail(session.email as string);
-      if (!findUser || !success) throw new Error(message);
+      const findUser = await findUserByEmail(session.email as string);
+      if (!findUser) throw new Error("Failed to fetch user");
       const user = {
         _id: findUser._id,
         name: findUser.name,
@@ -34,9 +28,9 @@ export const getUser = cache(
         createdAt: findUser.createdAt,
         updatedAt: findUser.updatedAt,
       };
-      return { success: true, user };
+      return { success: true, message: "Success to fetch user", user };
     } catch (error: any) {
-      return { success: false, message: error.message || "Failed to fetch user" };
+      return { success: false, message: error.message };
     }
   }
 );

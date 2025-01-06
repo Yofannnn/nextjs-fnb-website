@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dashboardPageMiddleware } from "@/middleware/dashboard.middleware";
-import { authPageMiddleware } from "@/middleware/auth.middleware";
+import { dashboardMiddleware } from "@/middleware/dashboard.middleware";
 import { routeApiMiddleware } from "@/middleware/route.middleware";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin-dashboard")) {
-    const response = await dashboardPageMiddleware(request);
-    if (response) return response;
-  }
-
-  if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
-    await authPageMiddleware(request);
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin-dashboard") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register")
+  ) {
+    return await dashboardMiddleware(request);
   }
 
   if (
@@ -20,9 +19,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/reservation") ||
     pathname.startsWith("/api/transaction")
   ) {
-    // /api/online-order?orderId=orderId or /api/online-order/orderId
-    const response = await routeApiMiddleware(request);
-    if (response) return response;
+    return await routeApiMiddleware(request);
   }
 
   return NextResponse.next();

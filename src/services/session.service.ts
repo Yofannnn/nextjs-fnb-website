@@ -6,7 +6,7 @@ import { UserRole } from "@/types/user.type";
 // Constants
 const SESSION_SECRET = process.env.SESSION_SECRET;
 if (!SESSION_SECRET) throw new Error("SESSION_SECRET is not defined in environment variables.");
-const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME;
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME as string;
 if (!SESSION_COOKIE_NAME) throw new Error("SESSION_COOKIE_NAME is not defined in environment variables.");
 const ENCODED_SECRET_KEY = new TextEncoder().encode(SESSION_SECRET);
 const COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 1 day
@@ -134,4 +134,22 @@ export async function refreshSessionCookie(): Promise<JWTPayload | null> {
  */
 export async function clearSessionCookie(): Promise<void> {
   (await cookies()).delete(SESSION_COOKIE_NAME);
+}
+
+/**
+ * Verifies if the session cookie is valid and returns the decoded payload if valid, otherwise `null`.
+ *
+ * @async
+ * @function verifySession
+ * @returns {Promise<JWTPayload|null>} Decoded payload if valid, otherwise `null`.
+ *
+ * @example
+ * const payload = await verifySession();
+ * if (!payload) {
+ *   console.error("Invalid session.");
+ * }
+ */
+export async function verifySession() {
+  const cookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  return await verifyToken(cookie);
 }
