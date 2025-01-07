@@ -10,9 +10,16 @@ import {
   deleteProductById,
 } from "@/services/product.service";
 import { EditProductSchema, ProductSchema, updateProductReviewSchema } from "@/validations/product.validation";
-import { verifySession } from "@/lib/dal";
+import { verifySession } from "@/services/session.service";
 import { UserRole } from "@/types/user.type";
 
+/**
+ * Checks if the current user is an admin.
+ *
+ * @async
+ * @function isAdmin
+ * @throws Will throw an error if the user is not authenticated or not an admin.
+ */
 async function isAdmin() {
   const session = await verifySession();
   if (!session) throw new Error("User not authenticated, please login.");
@@ -20,13 +27,30 @@ async function isAdmin() {
   if (!isAdmin) throw new Error("You are not an admin.");
 }
 
-export async function addProductAction(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
+/**
+ * Creates a new product.
+ *
+ * @param _ - Unused, but required by Next.js Action API
+ * @param formData - Form data containing the product details
+ * @returns - An ActionResult indicating whether the product was created successfully or not
+ *
+ * The function will first check if the user is an admin. If not, it will throw an error.
+ * Then, it will validate the form data using the ProductSchema.
+ * If the validation fails, it will return an ActionResult with success set to false and errors set to the validation errors.
+ * If the validation succeeds, it will call the storeNewProductService function to store the product in the database.
+ * If the storeNewProductService function fails, it will throw an error.
+ * If the storeNewProductService function succeeds, it will return an ActionResult with success set to true.
+ */
+export async function addProductAction(
+  image: File | null,
+  _: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const title = formData.get("title");
   const price = Number(formData.get("price"));
   const description = formData.get("description");
   const category = formData.get("category");
   const isAvailable = formData.get("isAvailable") === "true" ? true : false;
-  const image = formData.get("image") as File;
 
   try {
     await isAdmin();
@@ -51,6 +75,20 @@ export async function addProductAction(_: ActionResult | null, formData: FormDat
   }
 }
 
+/**
+ * Edits the details of an existing product.
+ *
+ * @param productId - The ID of the product to be edited
+ * @param _ - Unused, but required by Next.js Action API
+ * @param formData - Form data containing the updated product details
+ * @returns - An ActionResult indicating whether the product was edited successfully or not
+ *
+ * This function checks if the user is an admin and validates the form data using the EditProductSchema.
+ * If validation fails, it returns an ActionResult with success set to false and errors set to the validation errors.
+ * If validation succeeds, it calls the updateProductDetailsService function to update the product in the database.
+ * If the updateProductDetailsService function fails, it throws an error.
+ * If the updateProductDetailsService function succeeds, it returns an ActionResult with success set to true.
+ */
 export async function editProductDetailsAction(
   productId: string,
   _: ActionResult,
@@ -83,18 +121,43 @@ export async function editProductDetailsAction(
   }
 }
 
+/**
+ * Edits the availability of an existing product.
+ *
+ * @param productId - The ID of the product to be edited
+ * @param isAvailable - The new availability status of the product
+ * @returns - An ActionResult indicating whether the product was edited successfully or not
+ *
+ * This function checks if the user is an admin and calls the updateProductAvailabilityService function to update the
+ * product availability in the database. If the updateProductAvailabilityService function fails, it throws an error.
+ * If the updateProductAvailabilityService function succeeds, it returns an ActionResult with success set to true.
+ */
 export async function editProductAvailabilityAction(productId: string, isAvailable: boolean): Promise<ActionResult> {
   try {
     await isAdmin();
 
     const updatedProductAvailability = await updateProductAvailabilityService(productId, isAvailable);
     if (!updatedProductAvailability.success) throw new Error(updatedProductAvailability.message);
+
     return { success: true };
   } catch (error: any) {
     return { success: false, errors: formatError(error.message) };
   }
 }
 
+/**
+ * Adds a review to a product.
+ *
+ * @param userId - The ID of the user making the review
+ * @param productId - The ID of the product being reviewed
+ * @param _ - Unused, but required by Next.js Action API
+ * @param formData - Form data containing the review details
+ * @returns - An ActionResult indicating whether the review was added successfully or not
+ *
+ * This function checks if the user is logged in and calls the updateProductReviewService function to add the review to the
+ * database. If the updateProductReviewService function fails, it throws an error. If the updateProductReviewService function
+ * succeeds, it returns an ActionResult with success set to true.
+ */
 export async function editProductReviewAction(
   { userId, productId }: { userId: string; productId: string },
   _: ActionResult | null,
@@ -116,6 +179,17 @@ export async function editProductReviewAction(
   }
 }
 
+/**
+ * Deletes a product from the database.
+ *
+ * @param productId - The ID of the product to be deleted
+ * @param imageUrl - The URL of the product image to be deleted
+ * @returns - An ActionResult indicating whether the product was deleted successfully or not
+ *
+ * This function checks if the user is an admin and calls the deleteProductById function to delete the product and its image
+ * from the database. If the deleteProductById function fails, it throws an error. If the deleteProductById function succeeds,
+ * it returns an ActionResult with success set to true.
+ */
 export async function deleteProduct(productId: string, imageUrl: string): Promise<ActionResult> {
   try {
     await isAdmin();
