@@ -1,5 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,34 +12,24 @@ import { ModalBody, ModalContent, ModalFooter, ModalProvider } from "@/component
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ToastAction } from "@/components/ui/toast";
-import { useEffect, useState } from "react";
-import { MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { rupiah } from "@/lib/format-currency";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { AppDispatch, RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { clearClientReservationDetails, saveClientReservationDetails } from "@/redux/slice/reservation.slice";
-import { Product } from "@/types/product.type";
 import { User } from "@/types/user.type";
+import { Product } from "@/types/product.type";
 import { TransactionSuccess } from "@/types/transaction.type";
-import { handleTransactionComplete } from "@/midtrans/init";
-import { useToast } from "@/hooks/use-toast";
-import { initializeReservationAction } from "@/actions/reservation.action";
+import { InitializeReservationPayload } from "@/types/order.type";
+import { confirmReservationAction, initializeReservationAction } from "@/actions/reservation.action";
+import { rupiah } from "@/lib/format-currency";
 
-export default function ReservationPage({
-  isAuth,
-  user,
-}: {
-  isAuth: boolean;
-  user: Omit<User, "password"> | undefined;
-}) {
+export default function ReservationPage({ isAuth, user }: { isAuth: boolean; user: Omit<User, "password"> | undefined }) {
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const clientReservationDetails = useSelector((state: RootState) => state.clientReservationData);
+  const [isSubmitting, setSubmitStatus] = useState(false);
 
   const {
     customerEmail,
@@ -50,41 +44,39 @@ export default function ReservationPage({
     paymentStatus,
   } = clientReservationDetails;
 
-  const subtotal = (): number => {
-    return menus.reduce((acc, menu) => acc + menu.price * menu.quantity, 0);
-  };
+  const subtotal: number = menus.reduce((acc, menu) => acc + menu.price * menu.quantity, 0);
+  const discount: number = !isAuth || reservationType === "table-only" ? 0 : (subtotal * 10) / 100;
+  const total: number = subtotal - discount;
+  const downPayment: number = reservationType === "table-only" ? 30000 : paymentStatus === "downPayment" ? total / 2 : total;
 
-  const discount = (): number => {
-    if (!isAuth || reservationType === "table-only") return 0;
-    const discountPercentage = 10;
-    return (subtotal() * discountPercentage) / 100;
-  };
-
-  const total = (): number => {
-    return subtotal() - discount();
-  };
-
-  const downPayment = (): number => {
-    if (reservationType === "table-only") return 30000;
-    return paymentStatus === "downPayment" ? total() / 2 : total();
-  };
-
+  /**
+   * Handles the booking process, including payment and confirmation.
+   * @param {React.FormEvent<HTMLFormElement>} e - The form event.
+   */
   const handleBooking = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const body = {
+    setSubmitStatus(true);
+
+    if (isSubmitting) return;
+
+    /**
+     * The payload for the initializeReservationAction function.
+     * This payload will be used to create a new reservation.
+     */
+    const body: InitializeReservationPayload = {
       customerName: user?.name || customerName,
       customerEmail: user?.email || customerEmail,
-      reservationDate: `${reservationDate}T${reservationTime}`,
+      reservationDate: new Date(`${reservationDate}T${reservationTime}`),
       partySize,
-      seatingPreference,
+      seatingPreference: seatingPreference as "indoor" | "outdoor",
       specialRequest,
       paymentStatus,
       menus:
         reservationType === "table-only"
           ? []
           : menus.map((menu) => ({
-              productId: menu._id,
+              productId: menu.productId,
               quantity: menu.quantity,
               price: menu.price,
             })),
@@ -92,7 +84,7 @@ export default function ReservationPage({
 
     try {
       const action = await initializeReservationAction(body);
-      const { token } = action.data;
+      const token = action.data;
 
       window.snap.pay(token, {
         onSuccess: async function (result: TransactionSuccess) {
@@ -100,7 +92,9 @@ export default function ReservationPage({
             title: "Booking Success",
             description: "Thank you for booking with us",
           });
-          await handleTransactionComplete(user?._id || guestAccessToken, result.order_id, "reservation");
+
+          await confirmReservationAction(result.order_id);
+
           router.push(isAuth ? `/dashboard/reservation/${result.order_id}` : `/guest/reservation/${result.order_id}`);
         },
         onPending: function (result: any) {
@@ -117,19 +111,21 @@ export default function ReservationPage({
           router.push(isAuth ? `/dashboard/transaction` : `/guest/transaction`);
         },
       });
+
       dispatch(clearClientReservationDetails());
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
         description: error.message,
-        // action: <ToastAction altText="Try again" onClick={handleBooking}>Try again</ToastAction>,
       });
+    } finally {
+      setSubmitStatus(false);
     }
   };
 
   return (
-    <div className="mx-auto grid gap-3 md:grid-cols-[1fr_250px] lg:grid-cols-5 lg:gap-5 px-2 md:px-4 py-8">
+    <div className="mx-auto grid gap-3 md:grid-cols-[1fr_250px] lg:grid-cols-5 lg:gap-5 pt-20 px-2 md:px-4 py-8">
       <div className="lg:col-span-3">
         <Card>
           <CardHeader />
@@ -160,7 +156,7 @@ export default function ReservationPage({
             {reservationType === "include-food" && (
               <>
                 <ModalMenu />
-                <MenuForReservation />
+                <MenusForReservationComponent />
               </>
             )}
           </CardContent>
@@ -274,7 +270,7 @@ export default function ReservationPage({
                   <Select
                     name="partySize"
                     required
-                    defaultValue={partySize.toString()}
+                    defaultValue={String(partySize)}
                     onValueChange={(e) =>
                       dispatch(
                         saveClientReservationDetails({
@@ -373,26 +369,27 @@ export default function ReservationPage({
                   <Label>Bill</Label>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>{rupiah.format(subtotal())}</span>
+                    <span>{rupiah.format(subtotal)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Discount</span>
-                    <span>- {rupiah.format(discount())}</span>
+                    <span>- {rupiah.format(discount)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Total</span>
-                    <span>{rupiah.format(total())}</span>
+                    <span>{rupiah.format(total)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Down Payment</span>
-                    <span>{rupiah.format(downPayment())}</span>
+                    <span className="text-muted-foreground">Bill {paymentStatus === "downPayment" && "(Down Payment)"}</span>
+                    <span>{rupiah.format(downPayment)}</span>
                   </div>
                 </div>
               </div>
               <div className="mt-8">
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="animate-spin size-4 mr-2" />}
                   Reserve Now
                 </Button>
               </div>
@@ -404,18 +401,29 @@ export default function ReservationPage({
   );
 }
 
-function MenuForReservation() {
+function MenusForReservationComponent() {
   const dispatch: AppDispatch = useDispatch();
   const clientReservationData = useSelector((state: RootState) => state.clientReservationData);
   const { menus } = clientReservationData;
 
+  /**
+   * Adjust the quantity of the product.
+   *
+   * This function will increase or decrease the quantity of the product based
+   * on the `increase` parameter. If `increase` is true, the quantity will be
+   * increased by 1. If `increase` is false, the quantity will be decreased by 1.
+   *
+   * @param product The product to be adjusted.
+   * @param increase A boolean indicating whether to increase or decrease the
+   * quantity.
+   */
   const adjustProductQuantity = (product: Product, increase: boolean) => {
     let updatedMenus;
     let updatedClientReservationData;
 
     if (increase) {
       updatedMenus = [...menus].map((menu) =>
-        menu._id === product._id ? { ...menu, quantity: menu.quantity + 1 } : menu
+        menu.productId === product.productId ? { ...menu, quantity: menu.quantity + 1 } : menu
       );
       updatedClientReservationData = {
         ...clientReservationData,
@@ -423,7 +431,7 @@ function MenuForReservation() {
       };
     } else {
       updatedMenus = [...menus].map((menu) =>
-        menu._id === product._id ? { ...menu, quantity: menu.quantity - 1 } : menu
+        menu.productId === product.productId ? { ...menu, quantity: menu.quantity - 1 } : menu
       );
       updatedClientReservationData = {
         ...clientReservationData,
@@ -434,9 +442,17 @@ function MenuForReservation() {
     dispatch(saveClientReservationDetails(updatedClientReservationData));
   };
 
+  /**
+   * Remove a product from the menu.
+   *
+   * This function will remove the product from the menu based on the `productId`
+   * parameter.
+   *
+   * @param productId The ID of the product to be removed.
+   */
   const removeProduct = (productId: string) => {
     let updatedMenus;
-    updatedMenus = [...menus].filter((menu) => menu._id !== productId);
+    updatedMenus = [...menus].filter((menu) => menu.productId !== productId);
     const updatedClientReservationData = {
       ...clientReservationData,
       menus: updatedMenus,
@@ -492,7 +508,7 @@ function MenuForReservation() {
               <Button
                 className="absolute bottom-0 right-0 rounded-full p-3"
                 variant="ghost"
-                onClick={() => removeProduct(item._id)}
+                onClick={() => removeProduct(item.productId)}
               >
                 <Trash2Icon className="size-4" />
               </Button>
@@ -550,13 +566,11 @@ const ModalMenu = () => {
 
   const handleAddItem = (product: Product) => {
     const { menus } = clientReservationData;
-    const findIndexProduct = menus?.findIndex((item) => item._id === product._id);
+    const findIndexProduct = menus?.findIndex((item) => item.productId === product.productId);
 
     let updatedMenus;
     if (findIndexProduct !== -1) {
-      updatedMenus = [...menus].map((item, i) =>
-        findIndexProduct === i ? { ...item, quantity: item.quantity + 1 } : item
-      );
+      updatedMenus = [...menus].map((item, i) => (findIndexProduct === i ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
       updatedMenus = [...menus, { ...product, quantity: 1 }];
     }

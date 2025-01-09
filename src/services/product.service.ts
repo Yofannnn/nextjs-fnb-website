@@ -132,10 +132,7 @@ export async function updateProductReviewService(
 
 export async function deleteProductById(productId: string, imageUrl: string) {
   try {
-    const deleteProduct = await Promise.all([
-      ProductModel.findOneAndDelete({ productId }),
-      deleteImageService(imageUrl),
-    ]);
+    const deleteProduct = await Promise.all([ProductModel.findOneAndDelete({ productId }), deleteImageService(imageUrl)]);
     if (!deleteProduct[0] || !deleteProduct[1].success) throw new Error("Failed to delete product.");
 
     return { success: true, message: "Success to delete product" };
@@ -150,9 +147,9 @@ export async function getProductsSelectionFromDb(
   if (itemsFromClient.length === 0) return [];
 
   try {
-    const productsId = itemsFromClient.map((item) => item.productId);
+    const productIds = itemsFromClient.map((item) => item.productId);
 
-    const someProductsFromDB = await getSomeProductsById(productsId);
+    const someProductsFromDB = await getSomeProductsById(productIds);
     if (!someProductsFromDB) return [];
 
     const productsMap = new Map(someProductsFromDB.map((product: Product) => [product.productId, product]));
@@ -180,18 +177,14 @@ export async function getAllProducts() {
   return await ProductModel.find();
 }
 
-export async function getProductById(id: string) {
-  return await ProductModel.findById(id);
+export async function getProductById(productId: string) {
+  return await ProductModel.findOne({ productId });
 }
 
 export async function getProductsByCategory(category: string) {
   return await ProductModel.find({ category });
 }
 
-export async function getSomeProductsById(ids: string[]) {
-  const objectIds = ids
-    .filter((id) => mongoose.Types.ObjectId.isValid(id))
-    .map((id) => new mongoose.Types.ObjectId(id));
-  if (objectIds.length === 0) return;
-  return await ProductModel.find({ _id: { $in: objectIds } });
+export async function getSomeProductsById(productIds: string[]) {
+  return await ProductModel.find({ productId: { $in: productIds } });
 }

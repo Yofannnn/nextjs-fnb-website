@@ -4,22 +4,28 @@ import connectToDatabase from "@/database/mongoose";
 import ReservationModel from "@/database/models/reservation.model";
 import { getProductsSelectionFromDb } from "@/services/product.service";
 import { initializeTransactionService, settlementTransactionService } from "@/services/transaction.service";
-import { InitializeReservationPayload, Reservation } from "@/types/order.type";
+import { createSessionCookie, verifySession } from "@/services/session.service";
+import { sendEmail } from "@/services/email.service";
 import { getDiscount, getReservationDownPayment, getSubtotal } from "@/lib/calculation";
-import { v4 as uuidv4 } from "uuid";
-import { verifySession } from "@/lib/dal";
+import { InitializeReservationPayload, Reservation } from "@/types/order.type";
 import { UserRole } from "@/types/user.type";
-import { createSessionCookie } from "./session.service";
+import { v4 as uuidv4 } from "uuid";
 
-type Response<T = any> =
-  | { success: true; message: string; data: T }
-  | { success: false; message: string; data?: undefined };
-
-async function checkIsConflictReservation(date: Date, seatingPreference: "indoor" | "outdoor") {
+/**
+ * Check if there is a conflict reservation with the given date and seating preference.
+ * A conflict reservation is defined as a reservation with the same date and seating preference
+ * and the time difference between the two reservations is less than 6 hours.
+ *
+ * @param {Date} date - The date to check for conflict reservations.
+ * @param {"indoor"|"outdoor"} seatingPreference - The seating preference to check for conflict reservations.
+ * @returns {Promise<boolean>} - True if there is a conflict reservation, false otherwise.
+ */
+async function checkIsConflictReservation(date: Date, seatingPreference: "indoor" | "outdoor"): Promise<boolean> {
   const listReservation = await getReservationList();
   const confirmedReservation = listReservation.filter((reservation) => reservation.reservationStatus === "confirmed");
   const sixHoursInMillis = 6 * 60 * 60 * 1000;
 
+  // Check if there is a conflict reservation by comparing the time difference between the given date and the existing reservations.
   return confirmedReservation.some((reservation: Reservation) => {
     const existingTime = new Date(reservation.reservationDate).getTime();
     const newTime = new Date(date).getTime();
@@ -32,7 +38,16 @@ async function checkIsConflictReservation(date: Date, seatingPreference: "indoor
   });
 }
 
-export async function initializeReservationService(payload: InitializeReservationPayload): Promise<Response> {
+/**
+ * Initialize a new reservation by storing the reservation to the database and
+ * storing a new transaction to the database and get the midtrans payment token.
+ * If the user is not a member, set a cookie with the user's email and role.
+ *
+ * @param {InitializeReservationPayload} payload - The payload for initializing a new reservation.
+ * @returns {Promise<{ success: boolean; message: string; data: string | null }>} - The result of the initialization.
+ *   If success is true, the data is the midtrans payment token, otherwise the data is null.
+ */
+export async function initializeReservationService(payload: InitializeReservationPayload) {
   try {
     await connectToDatabase();
 
@@ -46,6 +61,10 @@ export async function initializeReservationService(payload: InitializeReservatio
       paymentStatus,
       menus,
     } = payload;
+
+    // menunya error njir
+    // check lagi indikasi dibagian sini, soalnya di action menu berhasil di log
+    // email ga kekirim, gatau apakah harus pake gmail atau gimana
 
     // Check if the time, date, and seating have already been booked within a 6-hour window
     const conflictReservation = await checkIsConflictReservation(reservationDate, seatingPreference);
@@ -101,26 +120,41 @@ export async function initializeReservationService(payload: InitializeReservatio
     // set cookies if user is not member(guest)
     if (!isMember) await createSessionCookie({ email: customerEmail, role: UserRole.Guest });
 
-    // logic send email to customer
-
     return { success: true, message: "Reservation success", data: midtransPaymentToken };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
 }
 
+/**
+ * Confirm a reservation by updating the reservation status to "confirmed" in the database
+ * and sending an email to the customer.
+ *
+ * @param {string} reservationId - The ID of the reservation to confirm.
+ * @returns {Promise<{ success: boolean; message: string; data: Reservation | null }>} - The result of the confirmation.
+ *   If success is true, the data is the confirmed reservation, otherwise the data is null.
+ */
 export async function confirmReservationService(reservationId: string) {
   try {
+    // settlement transaction will update the transaction status to "settlement"
     const settlementTransaction = await settlementTransactionService(reservationId);
     if (!settlementTransaction.success) throw new Error(settlementTransaction.message);
 
-    const updateReservation = await await ReservationModel.findOneAndUpdate(
+    // update the reservation status to "confirmed"
+    const updateReservation = await ReservationModel.findOneAndUpdate(
       { reservationId },
       { reservationStatus: "confirmed" },
       { new: true }
     );
 
     if (!updateReservation) throw new Error("Error updating reservation");
+
+    // send a confirmation email to the customer
+    await sendEmail({
+      to: updateReservation.email,
+      subject: "Reservation Confirmation",
+      text: "Your reservation has been confirmed.",
+    });
 
     return { success: true, message: "Success.", data: updateReservation };
   } catch (error: any) {
