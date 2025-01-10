@@ -1,73 +1,30 @@
 "use client";
 
-import Image from "next/image";
+import { useActionState, useEffect, useState } from "react";
+import { editProductDetailsAction } from "@/actions/product.action";
 import { useRouter } from "next/navigation";
-import { useState, useActionState, useEffect } from "react";
-import { addProductAction } from "@/actions/product.action";
+import { Product } from "@/types/product.type";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, Loader2, Upload } from "lucide-react";
-import { base64ToFile, fileToBase64 } from "@/lib/image-converter";
+import { toast } from "@/hooks/use-toast";
+import Image from "next/image";
 
-const STORAGE_NAME = "add-product-form-state";
-
-interface FormValue {
-  title?: string | "";
-  price?: string | "";
-  description?: string | "";
-  category?: "food" | "drink" | "snack" | "";
-  isAvailable?: "true" | "false" | "";
-  image?: string | "";
-}
-
-export default function AddProductPage() {
-  const { toast } = useToast();
+export default function AdminEditProductPage({ product }: { product: Product }) {
   const router = useRouter();
   const [previewImage, setPreviewImage] = useState<{ file: File; url: string } | null>(null);
-  const [formValue, setFormValue] = useState<FormValue>({
-    title: "",
-    price: "",
-    description: "",
-    category: "",
-    isAvailable: "",
-    image: "",
-  });
-  // binding image to action
-  const bindAddProductAction = addProductAction.bind(null, formValue.image ? base64ToFile(formValue.image || "") : null);
-  const [state, action, isPending] = useActionState(bindAddProductAction, null);
-
-  /**
-   * Handles the change event triggered by selecting an image file from the file input element.
-   * Updates the `previewImage` state with the URL of the selected image file and also updates the
-   * `formValue` state with the image in base64 format. The `formValue` state is also persisted into
-   * the session storage with the key of `STORAGE_NAME`.
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event triggered by the file input element
-   */
-  async function handleChangePreviewImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const newFiles = e.target.files;
-    if (newFiles && newFiles[0]) {
-      const base64 = await fileToBase64(newFiles[0]);
-      setFormValue((prev) => {
-        const updated = { ...prev, image: base64 };
-        sessionStorage.setItem(STORAGE_NAME, JSON.stringify(updated));
-        return updated;
-      });
-      setPreviewImage({ file: newFiles[0], url: URL.createObjectURL(newFiles[0]) });
-    }
-  }
+  const bindingEditProductAction = editProductDetailsAction.bind(null, product.productId, previewImage?.file);
+  const [state, action, pending] = useActionState(bindingEditProductAction, null);
 
   /**
    * Handles the drop event of the image file from the file input element.
    * Checks if the dropped file is an image file and if true, updates the `previewImage` state
-   * with the URL of the selected image file and also updates the `formValue` state with the
-   * image in base64 format. The `formValue` state is also persisted into the session storage
-   * with the key of `STORAGE_NAME`.
+   * with the URL of the selected image file.
    *
    * @param {React.DragEvent<HTMLDivElement>} event - The drop event of the file input element
    */
@@ -87,34 +44,30 @@ export default function AddProductPage() {
     const droppedFiles = event.dataTransfer?.files;
     if (droppedFiles.length > 0) {
       const newFiles = Array.from(droppedFiles);
-      handleChangeInput("image", await fileToBase64(newFiles[0]));
       setPreviewImage({ file: newFiles[0], url: URL.createObjectURL(newFiles[0]) });
     }
   }
 
   /**
-   * Handles the change event triggered by any input element that has a name attribute.
-   * Updates the `formValue` state with the new value and also persists the updated state
-   * into the session storage with the key of `STORAGE_NAME`.
-   * @param {string} name - The name of the input element
-   * @param {string} value - The new value of the input element
+   * Handles the change event triggered by selecting an image file from the file input element.
+   * Updates the `previewImage` state with the URL of the selected image file.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event triggered by the file input element
    */
-  function handleChangeInput(name: string, value: string) {
-    setFormValue((prev) => {
-      const updated = { ...prev, [name]: value };
-      sessionStorage.setItem(STORAGE_NAME, JSON.stringify(updated));
-      return updated;
-    });
+  async function handleChangePreviewImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const newFiles = e.target.files;
+    if (newFiles && newFiles[0]) {
+      setPreviewImage({ file: newFiles[0], url: URL.createObjectURL(newFiles[0]) });
+    }
   }
 
   useEffect(() => {
     // show toast and redirect if success
     if (state?.success) {
       toast({
-        title: "Yeeaaayyy.",
-        description: "Success to create new product",
+        title: "Yeeaaayyy, Success to edit product.",
+        description: `${product.productId} has been updated.`,
       });
-      sessionStorage.removeItem(STORAGE_NAME); // Remove form state from session storage
       setTimeout(() => router.back(), 2500); // Delay redirect
     }
     // show error toast
@@ -126,21 +79,6 @@ export default function AddProductPage() {
       });
     }
   }, [state, router]);
-
-  useEffect(() => {
-    // load form state from session storage
-    const storageState = JSON.parse(sessionStorage.getItem(STORAGE_NAME) || "null");
-    if (storageState) {
-      setFormValue(storageState);
-      if (storageState.image) {
-        // if image is stored in session storage set preview image
-        setPreviewImage({
-          file: base64ToFile(storageState.image),
-          url: URL.createObjectURL(base64ToFile(storageState.image)),
-        });
-      }
-    }
-  }, []);
 
   return (
     <form action={action}>
@@ -154,15 +92,16 @@ export default function AddProductPage() {
             <ChevronLeft className="h-4 w-4" />
             <span className="sr-only">Back</span>
           </Button>
-          <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-            Add New Product
-          </h1>
+          <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">Edit Product</h1>
+          <Badge variant="outline" className="ml-auto sm:ml-0">
+            {product.isAvailable ? "In stock" : "Out stock"}
+          </Badge>
           <div className="hidden items-center gap-2 md:ml-auto md:flex">
             <Button type="button" variant="outline" size="sm" onClick={() => router.back()}>
               Discard
             </Button>
-            <Button type="submit" size="sm" disabled={isPending}>
-              {isPending ? (
+            <Button type="submit" size="sm" disabled={pending}>
+              {pending ? (
                 <>
                   <Loader2 className="animate-spin size-4 mr-2" />
                   Please wait
@@ -190,8 +129,7 @@ export default function AddProductPage() {
                       type="text"
                       className="w-full"
                       placeholder="Enter name"
-                      onChange={(e) => handleChangeInput(e.target.name, e.target.value)}
-                      value={formValue.title}
+                      defaultValue={product.title}
                       required
                     />
                     {state?.errors?.fieldErrors?.title && (
@@ -202,15 +140,7 @@ export default function AddProductPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="price">Price</Label>
-                    <Input
-                      id="price"
-                      name="price"
-                      type="number"
-                      className="w-full"
-                      onChange={(e) => handleChangeInput(e.target.name, e.target.value)}
-                      value={formValue.price}
-                      required
-                    />
+                    <Input id="price" name="price" type="number" className="w-full" defaultValue={product.price} required />
                     {state?.errors?.fieldErrors?.price && (
                       <span className="text-xs bg-destructive text-destructive-foreground p-2 w-full rounded">
                         {state?.errors?.fieldErrors?.price}
@@ -223,8 +153,7 @@ export default function AddProductPage() {
                       id="description"
                       name="description"
                       className="min-h-48"
-                      onChange={(e) => handleChangeInput(e.target.name, e.target.value)}
-                      value={formValue.description}
+                      defaultValue={product.description}
                       required
                     />
                     {state?.errors?.fieldErrors?.description && (
@@ -244,12 +173,7 @@ export default function AddProductPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6">
-                  <Select
-                    name="category"
-                    onValueChange={(value) => handleChangeInput("category", value)}
-                    defaultValue={formValue.category}
-                    required
-                  >
+                  <Select name="category" defaultValue={product.category} required>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Choose category of your product" />
                     </SelectTrigger>
@@ -270,12 +194,7 @@ export default function AddProductPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6">
-                  <Select
-                    name="isAvailable"
-                    onValueChange={(value) => handleChangeInput("isAvailable", value)}
-                    defaultValue={formValue.isAvailable}
-                    required
-                  >
+                  <Select name="isAvailable" defaultValue={String(product.isAvailable)} required>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Choose status of your product" />
                     </SelectTrigger>
@@ -292,9 +211,7 @@ export default function AddProductPage() {
             <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle>Product Images</CardTitle>
-                <CardDescription>
-                  {!previewImage ? "Upload a product image" : "Change image by uploading new image"}
-                </CardDescription>
+                <CardDescription>Change image by uploading new image</CardDescription>
               </CardHeader>
               <CardContent className="w-full">
                 {state?.errors?.fieldErrors?.image && (
@@ -302,22 +219,11 @@ export default function AddProductPage() {
                     {state?.errors?.fieldErrors?.image}
                   </span>
                 )}
-                <div className="grid gap-2">
-                  <div className="size-full rounded-md cursor-pointer">
-                    {previewImage && (
-                      <Image
-                        src={previewImage.url}
-                        className="aspect-square w-full rounded-md object-cover"
-                        height="84"
-                        width="84"
-                        alt="Product image"
-                      />
-                    )}
-                  </div>
+                <div className="grid gap-3">
                   <div>
                     <label
                       htmlFor="image"
-                      className="flex flex-col justify-center items-center size-full border-dashed	border-2 rounded-md cursor-pointer py-14"
+                      className="flex flex-col justify-center items-center size-full border-dashed	border-2 rounded-md cursor-pointer py-12"
                     >
                       <Upload className="size-6 text-muted-foreground" />
                       <span className="mt-2 text-sm text-muted-foreground">Select or Drop Image here.</span>
@@ -331,6 +237,15 @@ export default function AddProductPage() {
                       onChange={handleChangePreviewImage}
                     />
                   </div>
+                  <div className="size-full rounded-md cursor-pointer">
+                    <Image
+                      src={previewImage ? previewImage.url : product.image}
+                      className="aspect-square w-full rounded-md object-cover"
+                      height="84"
+                      width="84"
+                      alt="Product image"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -340,8 +255,8 @@ export default function AddProductPage() {
           <Button type="button" variant="secondary" className="w-full">
             Discard
           </Button>
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? (
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? (
               <>
                 <Loader2 className="animate-spin size-4 mr-2" />
                 Please wait

@@ -1,7 +1,10 @@
 "use server";
 
 import { formatError } from "@/lib/format-error";
+import { UserRole } from "@/types/user.type";
 import { ActionResult } from "@/types/action-result.type";
+import { verifySession } from "@/services/session.service";
+import { EditProductSchema, ProductSchema, updateProductReviewSchema } from "@/validations/product.validation";
 import {
   storeNewProductService,
   updateProductAvailabilityService,
@@ -9,9 +12,6 @@ import {
   updateProductReviewService,
   deleteProductById,
 } from "@/services/product.service";
-import { EditProductSchema, ProductSchema, updateProductReviewSchema } from "@/validations/product.validation";
-import { verifySession } from "@/services/session.service";
-import { UserRole } from "@/types/user.type";
 
 /**
  * Checks if the current user is an admin.
@@ -91,14 +91,14 @@ export async function addProductAction(
  */
 export async function editProductDetailsAction(
   productId: string,
-  _: ActionResult,
+  image: File | undefined,
+  _: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   const title = formData.get("title");
   const price = Number(formData.get("price"));
   const description = formData.get("description");
   const category = formData.get("category");
-  const image = formData.get("image") as File | null;
 
   try {
     await isAdmin();
