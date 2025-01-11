@@ -7,21 +7,26 @@ import { loadCartFromLocal } from "@/redux/slice/cart.slice";
 import { loadCheckoutData } from "@/redux/slice/checkout.slice";
 import { fetchClientReservationDetails } from "@/redux/slice/reservation.slice";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
 import Navbar from "@/components/fragments/Navbar";
 import Script from "next/script";
-import { Toaster } from "@/components/ui/toaster";
 
-export default function Global({ children }: { children: React.ReactNode }) {
+export default function Root({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <Provider store={store}>
-      <NextThemesProvider attribute="class" defaultTheme="dark">
-        <LayoutContent>{children}</LayoutContent>
-      </NextThemesProvider>
-    </Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <NextThemesProvider attribute="class" defaultTheme="dark">
+          <RootLayoutContent>{children}</RootLayoutContent>
+        </NextThemesProvider>
+      </Provider>
+    </QueryClientProvider>
   );
 }
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
+function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const dispatch: AppDispatch = useDispatch();
   const [mounted, setMounted] = useState(false);
 

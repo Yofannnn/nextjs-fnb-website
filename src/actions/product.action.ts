@@ -190,7 +190,7 @@ export async function editProductReviewAction(
  * from the database. If the deleteProductById function fails, it throws an error. If the deleteProductById function succeeds,
  * it returns an ActionResult with success set to true.
  */
-export async function deleteProduct(productId: string, imageUrl: string): Promise<ActionResult> {
+export async function deleteProduct(productId: string, imageUrl: string) {
   try {
     await isAdmin();
 
@@ -199,6 +199,6 @@ export async function deleteProduct(productId: string, imageUrl: string): Promis
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, errors: formatError(error.message) };
+    return { success: false, errors: error.message };
   }
 }

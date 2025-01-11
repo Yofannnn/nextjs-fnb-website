@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Product } from "@/types/product.type";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteProduct, editProductAvailabilityAction } from "@/actions/product.action";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -17,14 +18,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -34,74 +29,152 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ListFilter, MoreHorizontal, PlusCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { LoaderComponent } from "@/components/ui/loader";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "@/hooks/use-toast";
+import { ListFilter, MoreHorizontal, PlusCircle, RefreshCw } from "lucide-react";
+import { Product } from "@/types/product.type";
 import { rupiah } from "@/lib/format-currency";
-import { deleteProduct } from "@/actions/product.action";
 
 export default function DashboardProduct() {
-  const [products, setProducts] = useState<{
-    isLoading: Boolean;
-    data?: Product[] | undefined;
-    error?: string | undefined;
-  }>({
-    isLoading: true,
-    data: undefined,
-    error: undefined,
-  });
   const route = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const category = searchParams.get("category");
+  const availability = searchParams.get("availability");
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const queryKey = ["products", category].filter(Boolean);
 
-  useEffect(() => {
-    async function getProducts() {
-      try {
-        const res = await fetch("/api/products/read", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!res.ok) throw new Error(res.statusText);
-        setProducts({ isLoading: false, data: await res.json() });
-      } catch (error: any) {
-        setProducts({ isLoading: false, error: error.message });
-      }
-    }
-
-    getProducts();
-  }, []);
-
-  const [filterProductBy, setFilterProductBy] = useState<
-    "available" | "unavailable" | "food" | "drink" | "snack" | ""
-  >("");
-
-  const filteredProducts = products.data?.filter((product) => {
-    if (filterProductBy === "available") {
-      return product.isAvailable === true;
-    }
-    if (filterProductBy === "unavailable") {
-      return product.isAvailable === false;
-    }
-    if (filterProductBy === "food") {
-      return product.category === "food";
-    }
-    if (filterProductBy === "drink") {
-      return product.category === "drink";
-    }
-    if (filterProductBy === "snack") {
-      return product.category === "snack";
-    }
-    return product;
+  const { data, error, isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const query = category ? `?category=${category}` : "";
+      const response = await fetch(`/api/products${query}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.statusText);
+      return result.data;
+    },
+    staleTime: 60 * 1000 * 5,
   });
 
-  async function handleDeleteProduct(id: string, imageUrl: string) {
-    const status = await deleteProduct(id, imageUrl);
-    if (status.success) route.refresh();
+  const products: Product[] = data;
+
+  /**
+   * Filter products by availability.
+   *
+   * @param {string} availability - "available" or "unavailable".
+   */
+  useEffect(() => {
+    if (availability === "available") {
+      setFilteredProducts(products.filter((product) => product.isAvailable === true) || []);
+    } else if (availability === "unavailable") {
+      setFilteredProducts(products.filter((product) => product.isAvailable === false) || []);
+    } else {
+      setFilteredProducts(products || []);
+    }
+  }, [availability, products]);
+
+  const handleEditProductAvailability = useMutation({
+    /**
+     * Mutation function to toggle product availability.
+     *
+     * @param {object} params - The parameters for the mutation.
+     * @param {string} params.productId - The ID of the product to update.
+     * @param {boolean} params.isAvailable - The current availability status of the product.
+     * @param {string} params.productTitle - The title of the product.
+     * @returns {Promise<void>}
+     */
+    mutationFn: async ({ productId, isAvailable }: { productId: string; isAvailable: boolean; productTitle: string }) => {
+      // Calls the action to edit product availability, toggling its current state
+      await editProductAvailabilityAction(productId, !isAvailable);
+    },
+    /**
+     * Function to be called when the mutation is successful.
+     *
+     * @param {unknown} data - The data returned from the mutation.
+     * @param {object} variables - The variables passed to the mutation function.
+     * @param {string} variables.productId - The ID of the product to update.
+     * @param {boolean} variables.isAvailable - The current availability status of the product.
+     * @param {string} variables.productTitle - The title of the product.
+     */
+    onSuccess: (data, variables) => {
+      // Invalidate the cache to fetch the latest data
+      queryClient.invalidateQueries({ queryKey });
+      toast({
+        title: "Success to update product availability.",
+        description: `${variables.productTitle} is now ${!variables.isAvailable ? "available" : "unavailable"}`,
+      });
+    },
+    /**
+     * Function to be called when the mutation encounters an error.
+     *
+     * @param {object} error - The error object containing the error message.
+     */
+    onError: (error) => {
+      // Display a toast notification with error details
+      toast({
+        title: "Upsss! Something went wrong.",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteProduct = useMutation({
+    /**
+     * Deletes a product by its ID and removes the associated image from the cloud storage.
+     * @param {string} productId - The ID of the product to delete.
+     * @param {string} imageUrl - The URL of the product image to remove from the cloud storage.
+     * @param {string} productTitle - The title of the product to be used in the toast notification.
+     * @returns {Promise<void>}
+     */
+    mutationFn: async ({ productId, imageUrl }: { productId: string; imageUrl: string; productTitle: string }) => {
+      await deleteProduct(productId, imageUrl);
+    },
+    /**
+     * Function to be called when the mutation is successful.
+     *
+     * @param {unknown} data - The data returned from the mutation.
+     * @param {object} variables - The variables passed to the mutation function.
+     * @param {string} variables.productId - The ID of the product to delete.
+     * @param {string} variables.imageUrl - The URL of the product image to remove from the cloud storage.
+     * @param {string} variables.productTitle - The title of the product to be used in the toast notification.
+     */
+    onSuccess: (data, variables) => {
+      // Invalidate the cache to fetch the latest data
+      queryClient.invalidateQueries({ queryKey });
+      toast({
+        title: "Success to delete product.",
+        description: `${variables.productTitle} was deleted.`,
+      });
+    },
+    /**
+     * Function to be called when the mutation encounters an error.
+     *
+     * @param {Error} error - The error object containing the error message.
+     * @param {object} variables - The variables passed to the mutation function.
+     * @param {object} context - The context object containing information about the mutation.
+     */
+    onError(error, variables, context) {
+      toast({
+        variant: "destructive",
+        title: "Upsss! Something went wrong.",
+        description: error.message,
+      });
+    },
+  });
+
+  /**
+   * Updates the query parameter with the given key and value.
+   * Uses the useSearchParams hook to get the current query parameters.
+   * Replaces the current URL with the new query parameter.
+   * @param {string} param - The key of the query parameter to update.
+   * @param {string} value - The new value of the query parameter.
+   */
+  function handleUpdateQueryParam(param: string, value: string) {
+    const params = new URLSearchParams(searchParams);
+    params.set(param, value);
+    route.replace(`?${params.toString()}`);
   }
 
   return (
@@ -113,77 +186,54 @@ export default function DashboardProduct() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 gap-1">
                   <ListFilter className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Filter
-                  </span>
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Filter</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Filter by</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  onClick={() => setFilterProductBy("")}
-                  checked={filterProductBy === ""}
-                >
-                  All Products
-                </DropdownMenuCheckboxItem>
+                {["available", "unavailable"].map((option) => (
+                  <DropdownMenuCheckboxItem
+                    key={option}
+                    onClick={() => handleUpdateQueryParam("availability", option)}
+                    checked={availability === option}
+                  >
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </DropdownMenuCheckboxItem>
+                ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  onClick={() => setFilterProductBy("available")}
-                  checked={filterProductBy === "available"}
-                >
-                  Available
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  onClick={() => setFilterProductBy("unavailable")}
-                  checked={filterProductBy === "unavailable"}
-                >
-                  Unavailable
-                </DropdownMenuCheckboxItem>
+                {["food", "drink", "snack"].map((option) => (
+                  <DropdownMenuCheckboxItem
+                    key={option}
+                    onClick={() => handleUpdateQueryParam("category", option)}
+                    checked={category === option}
+                  >
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </DropdownMenuCheckboxItem>
+                ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  onClick={() => setFilterProductBy("food")}
-                  checked={filterProductBy === "food"}
-                >
-                  Food
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  onClick={() => setFilterProductBy("drink")}
-                  checked={filterProductBy === "drink"}
-                >
-                  Drink
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  onClick={() => setFilterProductBy("snack")}
-                  checked={filterProductBy === "snack"}
-                >
-                  Snack
+                <DropdownMenuCheckboxItem onClick={() => route.replace("/admin-dashboard/products")}>
+                  Clear Filter
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link href="/admin-dashboard/products/add-product">
               <Button size="sm" className="h-7 gap-1">
                 <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Add Product
-                </span>
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Product</span>
               </Button>
             </Link>
           </div>
         </div>
-        <Card x-chunk="dashboard-06-chunk-0">
+        <Card>
           <CardHeader>
             <CardTitle>Products</CardTitle>
-            <CardDescription>
-              Manage your products and view their sales performance.
-            </CardDescription>
+            <CardDescription>Manage your products and view their sales performance.</CardDescription>
           </CardHeader>
           <CardContent>
-            {products.isLoading ? (
-              <div className="w-full flex justify-center items-center p-5">
-                <h1 className="text-2xl">Loading...</h1>
-              </div>
-            ) : products.data ? (
+            {isLoading ? (
+              <LoaderComponent />
+            ) : products ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -191,16 +241,10 @@ export default function DashboardProduct() {
                       <span className="sr-only">Image</span>
                     </TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Price
-                    </TableHead>
+                    <TableHead className="hidden md:table-cell">Price</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Category
-                    </TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Total Sales
-                    </TableHead>
+                    <TableHead className="hidden md:table-cell">Category</TableHead>
+                    <TableHead className="hidden md:table-cell">Total Sales</TableHead>
                     <TableHead>
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -218,39 +262,25 @@ export default function DashboardProduct() {
                           width="64"
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {product.title}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {rupiah.format(product.price)}
-                      </TableCell>
+                      <TableCell className="font-medium">{product.title}</TableCell>
+                      <TableCell className="hidden md:table-cell">{rupiah.format(product.price)}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {product.isAvailable ? "Available" : "Unavailable"}
-                        </Badge>
+                        <Badge variant="outline">{product.isAvailable ? "Available" : "Unavailable"}</Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">
                           {product.category
                             .split("")
-                            .map((text, i) =>
-                              i === 0 ? text.toUpperCase() : text
-                            )
+                            .map((text, i) => (i === 0 ? text.toUpperCase() : text))
                             .join("")}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {product.totalSales}
-                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{product.totalSales}</TableCell>
                       <TableCell>
                         <AlertDialog>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
                                 <MoreHorizontal className="h-4 w-4" />
                                 <span className="sr-only">Toggle menu</span>
                               </Button>
@@ -258,31 +288,32 @@ export default function DashboardProduct() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  route.push(
-                                    `/admin-dashboard/products/edit-product?id=${product._id}`
-                                  )
-                                }
+                                onClick={() => route.push(`/admin-dashboard/products/edit-product/${product.productId}`)}
                               >
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleEditProductAvailability.mutate({
+                                    productId: product.productId,
+                                    isAvailable: product.isAvailable,
+                                    productTitle: product.title,
+                                  })
+                                }
+                              >
+                                {product.isAvailable ? "Unavailable" : "Available"}
+                              </DropdownMenuItem>
                               <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-danger hover:text-danger">
-                                  Delete
-                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-danger hover:text-danger">Delete</DropdownMenuItem>
                               </AlertDialogTrigger>
                             </DropdownMenuContent>
                           </DropdownMenu>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Are you absolutely sure?
-                              </AlertDialogTitle>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete{" "}
-                                <strong>{product.title}</strong> and remove from
-                                Database.
+                                This action cannot be undone. This will permanently delete <strong>{product.title}</strong>{" "}
+                                and remove from Database.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -290,10 +321,11 @@ export default function DashboardProduct() {
                               <AlertDialogAction
                                 className="bg-destructive"
                                 onClick={() =>
-                                  handleDeleteProduct(
-                                    product._id,
-                                    product.image
-                                  )
+                                  handleDeleteProduct.mutate({
+                                    productId: product.productId,
+                                    imageUrl: product.image,
+                                    productTitle: product.title,
+                                  })
                                 }
                               >
                                 Delete
@@ -308,16 +340,10 @@ export default function DashboardProduct() {
               </Table>
             ) : (
               <div className="w-full flex justify-center items-center p-5">
-                <h1 className="text-2xl">Error : {products.error}</h1>
+                <h1 className="text-lg md:text-xl lg:text-2xl">Error : {error?.message}</h1>
               </div>
             )}
           </CardContent>
-          <CardFooter>
-            <div className="text-xs text-muted-foreground">
-              Showing <strong>{filteredProducts?.length}</strong> of{" "}
-              <strong>{products.data?.length}</strong> products
-            </div>
-          </CardFooter>
         </Card>
       </div>
     </>
