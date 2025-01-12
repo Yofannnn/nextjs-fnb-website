@@ -6,7 +6,7 @@ export interface Reservation {
   partySize: number;
   seatingPreference: "indoor" | "outdoor";
   specialRequest?: string;
-  reservationType: "table-only" | "include-food";
+  reservationType: ReservationType;
   menus?: ProductSelection[];
   subtotal: number;
   discount: number;
@@ -19,6 +19,18 @@ export interface Reservation {
   reasonPending?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export enum ReservationType {
+  TABLEONLY = "table-only",
+  INCLUDEFOOD = "include-food",
+}
+
+export enum ReservationStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  RESCHEDULED = "rescheduled",
+  CANCELLED = "cancelled",
 }
 
 export interface InitializeReservationPayload {
@@ -45,10 +57,20 @@ export interface OnlineOrder {
   discount: number;
   totalAmount: number;
   transactionId: string;
-  orderStatus: "pending" | "confirmed" | "processing" | "shipping" | "delivered" | "cancelled" | "expired";
+  orderStatus: OnlineOrderStatus;
   reasonCancellation?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export enum OnlineOrderStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  PROCESSING = "processing",
+  SHIPPING = "shipping",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  EXPIRED = "expired",
 }
 
 export interface InitializeOnlineOrderPayload {

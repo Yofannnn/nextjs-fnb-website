@@ -1,3 +1,5 @@
+"use client";
+
 import BlurFade from "@/components/ui/blur-fade";
 import FadeText from "@/components/ui/fade-text";
 import GradualSpacing from "@/components/ui/gradual-spacing";
@@ -5,23 +7,25 @@ import { Separator } from "@/components/ui/separator";
 import WordPullUp from "@/components/ui/word-pull-up";
 import { rupiah } from "@/lib/format-currency";
 import { Product } from "@/types/product.type";
-import {
-  InstagramLogoIcon,
-  LinkedInLogoIcon,
-  TwitterLogoIcon,
-} from "@radix-ui/react-icons";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Instagram, MessageCircle, Twitter } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-interface BestProducts {
-  data?: Product[];
-  error?: string;
-}
+export default function Home() {
+  const queryKey = ["products"];
+  const { data, error, isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const response = await fetch(`/api/products`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.statusText);
+      return result.data;
+    },
+    staleTime: 60 * 1000 * 5,
+  });
 
-export default async function Home() {
-  const resultBestProducts: BestProducts = await getBestProducts();
-  const bestProducts = resultBestProducts.data;
+  const products: Product[] = data;
 
   return (
     <>
@@ -35,12 +39,10 @@ export default async function Home() {
             className="w-full h-full object-cover object-center absolute top-0 left-0"
           />
           <div className="z-10 min-w-8/12 max-w-full p-1">
-            <h1 className="text-center text-6xl md:text-7xl lg:text-8xl font-bold my-5">
-              Title Restaurant
-            </h1>
+            <h1 className="text-center text-6xl md:text-7xl lg:text-8xl font-bold my-5">Title Restaurant</h1>
             <p className="text-center font-semibold text-sm lg:text-base">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Magni
-              architecto veniam ullam accusamus, quia ipsam accusantium
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Magni architecto veniam ullam accusamus, quia ipsam
+              accusantium
             </p>
           </div>
           <div className="z-10 absolute -bottom-2 -right-2">
@@ -61,12 +63,8 @@ export default async function Home() {
       <div className="grid grid-col-1 md:grid-cols-2 gap-16 px-4 md:px-12 py-14">
         <div className="col-span-1 flex items-center justify-between">
           <div className="flex flex-col justify-between gap-4">
-            <h2 className="text-3xl lg:text-4xl font-bold">
-              From passion to taste.
-            </h2>
-            <p className="text-muted-foreground">
-              All in the name of satisfaction.
-            </p>
+            <h2 className="text-3xl lg:text-4xl font-bold">From passion to taste.</h2>
+            <p className="text-muted-foreground">All in the name of satisfaction.</p>
           </div>
           <Image
             src="/landing-page/2-1-1.jpg"
@@ -85,10 +83,7 @@ export default async function Home() {
       </div>
       {/* third section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 md:px-12 py-14">
-        <BlurFade
-          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6"
-          delay={0.3 + 0 * 0.1}
-        >
+        <BlurFade className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6" delay={0.3 + 0 * 0.1}>
           <Image
             src="/landing-page/3-1.jpg"
             width={200}
@@ -98,12 +93,9 @@ export default async function Home() {
           />
           <div className="relative flex flex-col gap-14">
             <div>
-              <h3 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-4">
-                Lorem
-              </h3>
+              <h3 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-4">Lorem</h3>
               <p className="font-medium text-base md:text-sm lg:text-base">
-                Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                Impedit amet quisquam aperiam minima blanditiis
+                Lorem ipsum dolor, sit amet consectetur adipisicing elit. Impedit amet quisquam aperiam minima blanditiis
               </p>
             </div>
             <div>
@@ -120,10 +112,7 @@ export default async function Home() {
             <ArrowRight className="text-background" />
           </Link>
         </BlurFade>
-        <BlurFade
-          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6"
-          delay={0.3 + 1 * 0.1}
-        >
+        <BlurFade className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6" delay={0.3 + 1 * 0.1}>
           <Image
             src="/landing-page/3-2.jpg"
             width={200}
@@ -133,12 +122,9 @@ export default async function Home() {
           />
           <div className="relative flex flex-col gap-14">
             <div>
-              <h3 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-4">
-                Lorem
-              </h3>
+              <h3 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-4">Lorem</h3>
               <p className="font-medium text-base md:text-sm lg:text-base">
-                Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                Impedit amet quisquam aperiam minima blanditiis
+                Lorem ipsum dolor, sit amet consectetur adipisicing elit. Impedit amet quisquam aperiam minima blanditiis
               </p>
             </div>
             <div>
@@ -155,10 +141,7 @@ export default async function Home() {
             <ArrowRight className="text-background" />
           </Link>
         </BlurFade>
-        <BlurFade
-          className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6"
-          delay={0.3 + 2 * 0.1}
-        >
+        <BlurFade className="col-span-1 relative rounded-[30px] overflow-hidden p-6 md:p-4 lg:p-6" delay={0.3 + 2 * 0.1}>
           <Image
             src="/landing-page/3-3.jpg"
             width={200}
@@ -168,12 +151,9 @@ export default async function Home() {
           />
           <div className="relative flex flex-col gap-14">
             <div>
-              <h3 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-4">
-                Lorem
-              </h3>
+              <h3 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-4">Lorem</h3>
               <p className="font-medium text-base md:text-sm lg:text-base">
-                Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                Impedit amet quisquam aperiam minima blanditiis
+                Lorem ipsum dolor, sit amet consectetur adipisicing elit. Impedit amet quisquam aperiam minima blanditiis
               </p>
             </div>
             <div>
@@ -210,12 +190,9 @@ export default async function Home() {
           </BlurFade>
         </div>
         <div className="flex gap-3 md:gap-4 overflow-x-auto p-2 md:p-3">
-          {bestProducts ? (
-            bestProducts.map((product, i) => (
-              <div
-                key={i}
-                className="w-[250px] lg:w-[320px] h-fit p-3 rounded-[30px] relative border-2 shrink-0 grow-0"
-              >
+          {products ? (
+            products.map((product, i) => (
+              <div key={i} className="w-[250px] lg:w-[320px] h-fit p-3 rounded-[30px] relative border-2 shrink-0 grow-0">
                 <div className="rounded-[21px] overflow-hidden size-full">
                   <Image
                     src={product.image}
@@ -225,17 +202,13 @@ export default async function Home() {
                     className="w-full h-[230px] lg:h-[300px] object-cover object-center"
                   />
                 </div>
-                <h6 className="text-xl md:text-3xl font-medium mt-7">
-                  {product.title}
-                </h6>
+                <h6 className="text-xl md:text-3xl font-medium mt-7">{product.title}</h6>
                 <p className="text-muted-foreground mt-2 text-sm">
                   Lorem ipsum dolor sit, amet consectetur adipisicing elit
                 </p>
-                <p className="text-base md:text-xl mt-7 mb-4">
-                  {rupiah.format(product.price)}
-                </p>
+                <p className="text-base md:text-xl mt-7 mb-4">{rupiah.format(product.price)}</p>
                 <Link
-                  href={`/menu/${product._id}`}
+                  href={`/menu/${product.productId}`}
                   className="absolute bottom-4 right-4 size-12 rounded-full bg-foreground flex justify-center items-center"
                 >
                   <ArrowRight className="text-background" />
@@ -243,7 +216,7 @@ export default async function Home() {
               </div>
             ))
           ) : (
-            <span>{resultBestProducts.error}</span>
+            <span>{error?.message}</span>
           )}
         </div>
       </div>
@@ -251,8 +224,7 @@ export default async function Home() {
       <div className="px-4 md:px-12 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 items-center mb-12 gap-4 md:gap-0">
           <p className="col-span-1 text-muted-foreground md:w-[80%] text-center md:text-start text-base md:text-sm lg:text-base">
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Impedit
-            amet quisquam aperiam minima blanditiis
+            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Impedit amet quisquam aperiam minima blanditiis
           </p>
           <GradualSpacing
             className="col-span-1 text-5xl lg:text-7xl font-bold md:text-end tracking-tighter"
@@ -275,8 +247,8 @@ export default async function Home() {
             <div className="relative rounded-[20px] h-fit backdrop-blur-none group-hover:backdrop-blur-md transition-all duration-500 self-end p-6 overflow-hidden">
               <h4 className="text-4xl font-bold">Location</h4>
               <p className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 opacity-0 group-hover:opacity-100 mt-4">
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-                Recusandae mollitia, sit odio laudantium sunt corporis nobis.
+                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Recusandae mollitia, sit odio laudantium sunt
+                corporis nobis.
               </p>
             </div>
             <Link
@@ -301,8 +273,8 @@ export default async function Home() {
             <div className="relative rounded-[20px] h-fit backdrop-blur-none group-hover:backdrop-blur-md transition-all duration-500 self-end p-6 overflow-hidden">
               <h4 className="text-4xl font-bold">Menu&apos;s</h4>
               <p className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 opacity-0 group-hover:opacity-100 mt-4">
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-                Recusandae mollitia, sit odio laudantium sunt corporis nobis.
+                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Recusandae mollitia, sit odio laudantium sunt
+                corporis nobis.
               </p>
             </div>
             <Link
@@ -327,8 +299,8 @@ export default async function Home() {
             <div className="relative rounded-[20px] h-fit backdrop-blur-none group-hover:backdrop-blur-md transition-all duration-500 self-end p-6 overflow-hidden">
               <h4 className="text-4xl font-bold">Shop</h4>
               <p className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 opacity-0 group-hover:opacity-100 mt-4">
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-                Recusandae mollitia, sit odio laudantium sunt corporis nobis.
+                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Recusandae mollitia, sit odio laudantium sunt
+                corporis nobis.
               </p>
             </div>
             <Link
@@ -353,8 +325,8 @@ export default async function Home() {
             <div className="relative rounded-[20px] h-fit backdrop-blur-none group-hover:backdrop-blur-md transition-all duration-500 self-end p-6 overflow-hidden">
               <h4 className="text-4xl font-bold">Reservation</h4>
               <p className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 opacity-0 group-hover:opacity-100 mt-4">
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-                Recusandae mollitia, sit odio laudantium sunt corporis nobis.
+                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Recusandae mollitia, sit odio laudantium sunt
+                corporis nobis.
               </p>
             </div>
             <Link
@@ -398,35 +370,18 @@ export default async function Home() {
             <div className="w-full h-full backdrop-blur rounded-[20px] p-2 md:p-8 flex flex-col justify-around items-center gap-5">
               <div className="flex justify-center items-center gap-3">
                 <div>
-                  <Link
-                    href="/"
-                    className="inline-block p-4 rounded-full border border-foreground"
-                  >
-                    <InstagramLogoIcon className="size-5 md:size-7" />
+                  <Link href="/" className="inline-block p-4 rounded-full border border-foreground">
+                    <Instagram className="size-5 md:size-7" />
                   </Link>
                 </div>
                 <div>
-                  <Link
-                    href="/"
-                    className="inline-block p-4 rounded-full border border-foreground"
-                  >
-                    <TwitterLogoIcon className="size-5 md:size-7" />
+                  <Link href="/" className="inline-block p-4 rounded-full border border-foreground">
+                    <Twitter className="size-5 md:size-7" />
                   </Link>
                 </div>
                 <div>
-                  <Link
-                    href="/"
-                    className="inline-block p-4 rounded-full border border-foreground"
-                  >
+                  <Link href="/" className="inline-block p-4 rounded-full border border-foreground">
                     <MessageCircle className="size-5 md:size-7" />
-                  </Link>
-                </div>
-                <div>
-                  <Link
-                    href="/"
-                    className="inline-block p-4 rounded-full border border-foreground"
-                  >
-                    <LinkedInLogoIcon className="size-5 md:size-7" />
                   </Link>
                 </div>
               </div>
@@ -437,10 +392,7 @@ export default async function Home() {
                   <Link href="/faq">FAQ</Link>
                   <Link href="/manae-reservation">Manage Reservation</Link>
                 </div>
-                <Separator
-                  className="bg-foreground h-20 md:h-10"
-                  orientation="vertical"
-                />
+                <Separator className="bg-foreground h-20 md:h-10" orientation="vertical" />
                 <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-3 text-base md:text-xl font-semibold">
                   <Link href="/menu">Menu</Link>
                   <Link href="/reservation">Reservation</Link>
@@ -452,17 +404,4 @@ export default async function Home() {
       </footer>
     </>
   );
-}
-
-async function getBestProducts() {
-  try {
-    const res = await fetch(`${process.env.BASE_URL}/api/products/read`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) throw new Error(res.statusText);
-    return { data: await res.json() };
-  } catch (error: any) {
-    return { error: error.message };
-  }
 }

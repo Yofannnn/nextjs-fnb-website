@@ -62,10 +62,6 @@ export async function initializeReservationService(payload: InitializeReservatio
       menus,
     } = payload;
 
-    // menunya error njir
-    // check lagi indikasi dibagian sini, soalnya di action menu berhasil di log
-    // email ga kekirim, gatau apakah harus pake gmail atau gimana
-
     // Check if the time, date, and seating have already been booked within a 6-hour window
     const conflictReservation = await checkIsConflictReservation(reservationDate, seatingPreference);
     if (conflictReservation) throw new Error("Sorry, your time, date, and seating have already been booked");
@@ -162,12 +158,60 @@ export async function confirmReservationService(reservationId: string) {
   }
 }
 
-export async function getReservationById(reservationId: string) {
-  return await ReservationModel.findOne({ reservationId });
+/**
+ * Get reservations by status, type, and date.
+ *
+ * @param {string} [reservationStatus] - The status of the reservation to filter by.
+ * @param {string} [reservationType] - The type of the reservation to filter by.
+ * @param {string} [reservationDate] - The date of the reservation to filter by in the format of
+ *   a timestamp in milliseconds. The date will be adjusted to the start of the day in
+ *   the user's timezone and the end of the day in the user's timezone.
+ * @returns {Promise<Reservation[]>} - The list of reservations that match the filter criteria.
+ */
+export async function getReservationByStatusByTypeByDate(
+  reservationStatus?: string,
+  reservationType?: string,
+  reservationDate?: string
+) {
+  let dateQuery = {};
+
+  // Check if reservationDate is provided and compute start and end of the day
+  if (reservationDate) {
+    const providedTimestamp = Number(reservationDate); // Timestamp from the frontend
+    const timezoneOffsetInMs = 7 * 60 * 60 * 1000; // GMT+7 offset in milliseconds
+
+    // Adjust providedTimestamp by adding 1 day (24 hours in milliseconds)
+    const adjustedTimestamp = providedTimestamp + 24 * 60 * 60 * 1000;
+
+    // Compute start and end of the day in UTC
+    const startOfDay = new Date(adjustedTimestamp - timezoneOffsetInMs);
+    startOfDay.setUTCHours(0, 0, 0, 0); // Start of day in UTC
+
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setUTCHours(23, 59, 59, 999); // End of day in UTC
+
+    dateQuery = {
+      reservationDate: {
+        $gte: startOfDay,
+        $lt: endOfDay,
+      },
+    };
+  }
+
+  // Construct the query
+  return await ReservationModel.find({
+    ...(reservationStatus && { reservationStatus }),
+    ...(reservationType && { reservationType }),
+    ...dateQuery,
+  });
 }
 
 export async function getReservationByEmail(customerEmail: string) {
   return await ReservationModel.find({ customerEmail });
+}
+
+export async function getReservationById(reservationId: string) {
+  return await ReservationModel.findOne({ reservationId });
 }
 
 export async function getReservationList() {
