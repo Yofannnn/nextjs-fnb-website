@@ -12,8 +12,7 @@ export async function GET(request: Request) {
 
     if (productId) {
       const product = await getProductById(productId);
-      if (!product)
-        return new Response(JSON.stringify({ status: 404, statusText: "Product not found." }), { status: 404 });
+      if (!product) return new Response(JSON.stringify({ status: 404, statusText: "Product not found." }), { status: 404 });
 
       return new Response(JSON.stringify({ status: 200, statusText: "Success to get product.", data: product }), {
         status: 200,
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
     }
 
     if (cart) {
-      const products = await getSomeProductsById(cart.split("-"));
+      const products = await getSomeProductsById(cart.split(","));
 
       if (!products)
         return new Response(JSON.stringify({ status: 404, statusText: "Failed to retrieve products." }), {
@@ -48,10 +47,9 @@ export async function GET(request: Request) {
     const allProducts = await getAllProducts();
     if (!allProducts) throw new Error("Failed to retrieve products.");
 
-    return new Response(
-      JSON.stringify({ status: 200, statusText: "Success to get all products.", data: allProducts }),
-      { status: 200 }
-    );
+    return new Response(JSON.stringify({ status: 200, statusText: "Success to get all products.", data: allProducts }), {
+      status: 200,
+    });
   } catch (error: any) {
     return new Response(JSON.stringify({ status: 500, statusText: error.message }), { status: 500 });
   }

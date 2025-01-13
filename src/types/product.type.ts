@@ -4,7 +4,7 @@ export interface Product {
   title: string;
   price: number;
   description: string;
-  category: string;
+  category: ProductCategory;
   image: string;
   isAvailable: boolean;
   options?: string[];
@@ -18,4 +18,10 @@ export interface Product {
   totalSales?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export enum ProductCategory {
+  FOOD = "food",
+  DRINK = "drink",
+  SNACK = "snack",
 }

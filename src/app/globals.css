@@ -66,3 +66,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* product card description */
+.ellipsis-on-third-line {
+  display: inline;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
+}

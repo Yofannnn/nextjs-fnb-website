@@ -25,7 +25,7 @@ export default function MenuDetailsPage({ product }: { product: Product }) {
             priority={true}
           />
           <div>
-            <Button onClick={() => handleAddToCart(product._id)}>
+            <Button onClick={() => handleAddToCart(product.productId)}>
               Add to Cart
             </Button>
           </div>
