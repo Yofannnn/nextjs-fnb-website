@@ -51,15 +51,11 @@ export const updateProductsCheckout = ({
   const localProductsCheckout = fetchCheckoutDataFromStorage().productsCheckout;
 
   if (remove) {
-    const updated = localProductsCheckout.filter(
-      (item) => item._id !== newProduct._id
-    );
+    const updated = localProductsCheckout.filter((item) => item.productId !== newProduct.productId);
     return updated;
   }
 
-  const productIndex = localProductsCheckout.findIndex(
-    (item) => item._id === newProduct._id
-  );
+  const productIndex = localProductsCheckout.findIndex((item) => item.productId === newProduct.productId);
 
   const updated =
     productIndex !== -1
@@ -76,21 +72,15 @@ export const updateProductsCheckout = ({
   return updated;
 };
 
-export const saveCheckoutData = createAsyncThunk(
-  "checkout/saveCheckoutData",
-  (checkoutData: CheckoutData): CheckoutData => {
-    saveCheckoutDataToStorage(checkoutData);
-    return checkoutData;
-  }
-);
+export const saveCheckoutData = createAsyncThunk("checkout/saveCheckoutData", (checkoutData: CheckoutData): CheckoutData => {
+  saveCheckoutDataToStorage(checkoutData);
+  return checkoutData;
+});
 
-export const clearCheckoutData = createAsyncThunk(
-  "checkout/clearCheckoutData",
-  (): CheckoutData => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    return defaultCheckoutData;
-  }
-);
+export const clearCheckoutData = createAsyncThunk("checkout/clearCheckoutData", (): CheckoutData => {
+  sessionStorage.removeItem(STORAGE_KEY);
+  return defaultCheckoutData;
+});
 
 const initialState: CheckoutData = defaultCheckoutData;
 

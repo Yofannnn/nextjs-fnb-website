@@ -39,5 +39,3 @@ export async function sendEmail({
     return { success: false, message: error.message };
   }
 }
-
-console.log("test");

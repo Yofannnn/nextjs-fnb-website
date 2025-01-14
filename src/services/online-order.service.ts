@@ -1,19 +1,28 @@
+"use server";
+
 import connectToDatabase from "@/database/mongoose";
 import OnlineOrderModel from "@/database/models/online-order.model";
 import { getProductsSelectionFromDb } from "@/services/product.service";
 import { initializeTransactionService, settlementTransactionService } from "@/services/transaction.service";
-import { getDiscount, getShippingCost, getSubtotal } from "@/lib/calculation";
+import { createSessionCookie } from "@/services/session.service";
+import { verifySession } from "@/services/session.service";
+import { sendEmail } from "@/services/email.service";
 import { v4 as uuidv4 } from "uuid";
-import { InitializeOnlineOrderPayload } from "@/types/order.type";
-import { verifySession } from "@/lib/dal";
 import { UserRole } from "@/types/user.type";
-import { createSessionCookie } from "./session.service";
+import { InitializeOnlineOrderPayload } from "@/types/order.type";
+import { getDiscount, getShippingCost, getSubtotal } from "@/lib/calculation";
+import { confirmOnlineOrderHTML } from "@/lib/email-html";
 
-type Response<T = any> =
-  | { success: true; message: string; data: T }
-  | { success: false; message: string; data?: undefined };
-
-export async function initializeOnlineOrderService(payload: InitializeOnlineOrderPayload): Promise<Response> {
+/**
+ * Initialize a new online order by storing the online order to the database and
+ * storing a new transaction to the database and get the midtrans payment token.
+ * If the user is not a member, set a cookie with the user's email and role.
+ *
+ * @param {InitializeOnlineOrderPayload} payload - The payload for initializing a new online order.
+ * @returns {Promise<{ success: boolean; message: string; data: string | null }>} - The result of the initialization.
+ *   If success is true, the data is the midtrans payment token, otherwise the data is null.
+ */
+export async function initializeOnlineOrderService(payload: InitializeOnlineOrderPayload) {
   try {
     await connectToDatabase();
 
@@ -60,15 +69,21 @@ export async function initializeOnlineOrderService(payload: InitializeOnlineOrde
 
     if (!isMember) await createSessionCookie({ email: customerEmail, role: UserRole.Guest });
 
-    // logic send email to user
-
     return { success: true, message: "Success.", data: midtransPaymentToken };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
 }
 
-export async function confirmOnlineOrderService(orderId: string): Promise<Response> {
+/**
+ * Confirm an online order by updating the order status to "confirmed" and sending
+ * a confirmation email to the customer.
+ *
+ * @param {string} orderId - The ID of the online order.
+ * @returns {Promise<{ success: boolean; message: string; data: OnlineOrder | null }>} - The result of the confirmation.
+ *   If success is true, the data is the updated online order, otherwise the data is null.
+ */
+export async function confirmOnlineOrderService(orderId: string) {
   try {
     const settlementTransaction = await settlementTransactionService(orderId);
     if (!settlementTransaction.success) throw new Error(settlementTransaction.message);
@@ -79,6 +94,13 @@ export async function confirmOnlineOrderService(orderId: string): Promise<Respon
       { new: true }
     );
     if (!updateOnlineOrder) throw new Error("Something went wrong");
+
+    const sendingEmail = await sendEmail({
+      to: updateOnlineOrder.customerEmail,
+      subject: "Online Order Confirmation",
+      text: "Your order has been confirmed.",
+      html: confirmOnlineOrderHTML(updateOnlineOrder),
+    });
 
     return { success: true, message: "Success.", data: updateOnlineOrder };
   } catch (error: any) {
