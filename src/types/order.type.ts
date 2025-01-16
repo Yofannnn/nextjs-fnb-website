@@ -4,7 +4,7 @@ export interface Reservation {
   customerEmail: string;
   reservationDate: Date;
   partySize: number;
-  seatingPreference: "indoor" | "outdoor";
+  seatingPreference: ReservationSeatingPreference;
   specialRequest?: string;
   reservationType: ReservationType;
   menus?: ProductSelection[];
@@ -13,17 +13,27 @@ export interface Reservation {
   total: number;
   downPayment: number;
   transactionId: string;
-  paymentStatus: "downPayment" | "paid";
-  reservationStatus: "pending" | "confirmed" | "rescheduled" | "cancelled";
+  paymentStatus: ReservationPaymentStatus;
+  reservationStatus: ReservationStatus;
   reasonCancellation?: string;
   reasonPending?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export enum ReservationSeatingPreference {
+  INDOOR = "indoor",
+  OUTDOOR = "outdoor",
+}
+
 export enum ReservationType {
   TABLEONLY = "table-only",
   INCLUDEFOOD = "include-food",
+}
+
+export enum ReservationPaymentStatus {
+  DOWNPAYMENT = "downPayment",
+  PAID = "paid",
 }
 
 export enum ReservationStatus {
@@ -38,8 +48,8 @@ export interface InitializeReservationPayload {
   customerEmail: string;
   reservationDate: Date;
   partySize: number;
-  seatingPreference: "indoor" | "outdoor";
-  paymentStatus: "downPayment" | "paid";
+  seatingPreference: ReservationSeatingPreference;
+  paymentStatus: ReservationPaymentStatus;
   specialRequest?: string | undefined;
   menus?: { productId: string; quantity: number }[];
 }

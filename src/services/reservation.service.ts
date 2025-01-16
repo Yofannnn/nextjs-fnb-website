@@ -7,7 +7,7 @@ import { initializeTransactionService, settlementTransactionService } from "@/se
 import { createSessionCookie, verifySession } from "@/services/session.service";
 import { sendEmail } from "@/services/email.service";
 import { getDiscount, getReservationDownPayment, getSubtotal } from "@/lib/calculation";
-import { InitializeReservationPayload, Reservation } from "@/types/order.type";
+import { InitializeReservationPayload, Reservation, ReservationType } from "@/types/order.type";
 import { UserRole } from "@/types/user.type";
 import { v4 as uuidv4 } from "uuid";
 
@@ -66,15 +66,19 @@ export async function initializeReservationService(payload: InitializeReservatio
     const conflictReservation = await checkIsConflictReservation(reservationDate, seatingPreference);
     if (conflictReservation) throw new Error("Sorry, your time, date, and seating have already been booked");
 
+    const downPayment_tableOnly = 30000;
     const session = await verifySession();
     const isMember = session?.role === UserRole.Member;
     const reservationId = uuidv4();
     const menusFromDb = await getProductsSelectionFromDb(menus || []);
-    const reservationType = menusFromDb.length > 0 ? "include-food" : "table-only";
-    const subtotal = getSubtotal(menusFromDb);
+    const reservationType = menusFromDb.length > 0 ? ReservationType.INCLUDEFOOD : ReservationType.TABLEONLY;
+    const subtotal = reservationType === ReservationType.TABLEONLY ? downPayment_tableOnly : getSubtotal(menusFromDb);
     const discount = !menusFromDb.length ? 0 : getDiscount(isMember, subtotal);
     const total = subtotal - discount;
-    const downPayment = getReservationDownPayment(reservationType, paymentStatus, total);
+    const downPayment =
+      reservationType === ReservationType.TABLEONLY
+        ? downPayment_tableOnly
+        : getReservationDownPayment(paymentStatus, total);
 
     const transactionPayload = {
       orderId: reservationId,
@@ -159,20 +163,28 @@ export async function confirmReservationService(reservationId: string) {
 }
 
 /**
- * Get reservations by status, type, and date.
+ * Get a list of reservations that match the given filter criteria.
  *
- * @param {string} [reservationStatus] - The status of the reservation to filter by.
- * @param {string} [reservationType] - The type of the reservation to filter by.
- * @param {string} [reservationDate] - The date of the reservation to filter by in the format of
+ * @param {object} [filter] - The filter criteria.
+ * @param {string} [filter.customerEmail] - The customer email to filter by.
+ * @param {string} [filter.reservationDate] - The reservation date to filter by in the format of
  *   a timestamp in milliseconds. The date will be adjusted to the start of the day in
  *   the user's timezone and the end of the day in the user's timezone.
+ * @param {string} [filter.reservationType] - The reservation type to filter by.
+ * @param {string} [filter.reservationStatus] - The reservation status to filter by.
  * @returns {Promise<Reservation[]>} - The list of reservations that match the filter criteria.
  */
-export async function getReservationByStatusByTypeByDate(
-  reservationStatus?: string,
-  reservationType?: string,
-  reservationDate?: string
-) {
+export async function getFilteredReservations({
+  customerEmail,
+  reservationDate,
+  reservationType,
+  reservationStatus,
+}: {
+  customerEmail?: string;
+  reservationDate?: string;
+  reservationType?: string;
+  reservationStatus?: string;
+}) {
   let dateQuery = {};
 
   // Check if reservationDate is provided and compute start and end of the day
@@ -200,14 +212,11 @@ export async function getReservationByStatusByTypeByDate(
 
   // Construct the query
   return await ReservationModel.find({
+    ...(customerEmail && { customerEmail }),
     ...(reservationStatus && { reservationStatus }),
     ...(reservationType && { reservationType }),
     ...dateQuery,
   });
-}
-
-export async function getReservationByEmail(customerEmail: string) {
-  return await ReservationModel.find({ customerEmail });
 }
 
 export async function getReservationById(reservationId: string) {

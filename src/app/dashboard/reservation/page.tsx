@@ -1,29 +1,42 @@
-import MemberReservationListPage from "@/components/pages/MemberReservationListPage";
-import { verifySession } from "@/lib/dal";
+"use client";
 
-async function getMemberReservationList(userId: string) {
-  try {
-    const res = await fetch(
-      `${process.env.BASE_URL}/api/reservation?accessId=${userId}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.statusText);
-    return { success: true, data: result.data };
-  } catch (error: any) {
-    return { success: false, message: error.message };
-  }
-}
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import DashboardReservationList from "@/components/pages/DashboardReservationList";
 
-export default async function DashboardReservation() {
-  const { isAuth, userId } = await verifySession();
-  const { success, message, data } = await getMemberReservationList(
-    userId as string
+export default function MemberDashboardReservation() {
+  const searchParams = useSearchParams();
+  const reservationStatus = searchParams.get("reservationStatus");
+  const reservationType = searchParams.get("reservationType");
+  const reservationDate = searchParams.get("reservationDate");
+  const queryKey = ["reservations", reservationStatus, reservationType, reservationDate].filter(Boolean);
+
+  const queryParams = {
+    ...(reservationStatus && { reservationStatus }),
+    ...(reservationType && { reservationType }),
+    ...(reservationDate && { reservationDate }),
+  };
+  const queryString = new URLSearchParams(queryParams).toString();
+
+  const { data, error, isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const response = await fetch(`/api/reservation/user?${queryString}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.statusText);
+      return result.data;
+    },
+    staleTime: 60 * 1000 * 5,
+  });
+
+  return (
+    <DashboardReservationList
+      reservationDate={reservationDate}
+      reservationType={reservationType}
+      reservationStatus={reservationStatus}
+      reservations={data}
+      error={error}
+      isLoading={isLoading}
+    />
   );
-
-  if (!isAuth) return null;
-  return <MemberReservationListPage reservationList={data} />;
 }
