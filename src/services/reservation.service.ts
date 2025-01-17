@@ -2,7 +2,7 @@
 
 import connectToDatabase from "@/database/mongoose";
 import ReservationModel from "@/database/models/reservation.model";
-import { getProductsSelectionFromDb } from "@/services/product.service";
+import { prepareProductSelections } from "@/services/product.service";
 import { initializeTransactionService, settlementTransactionService } from "@/services/transaction.service";
 import { createSessionCookie, verifySession } from "@/services/session.service";
 import { sendEmail } from "@/services/email.service";
@@ -70,7 +70,7 @@ export async function initializeReservationService(payload: InitializeReservatio
     const session = await verifySession();
     const isMember = session?.role === UserRole.Member;
     const reservationId = uuidv4();
-    const menusFromDb = await getProductsSelectionFromDb(menus || []);
+    const menusFromDb = await prepareProductSelections(menus || []);
     const reservationType = menusFromDb.length > 0 ? ReservationType.INCLUDEFOOD : ReservationType.TABLEONLY;
     const subtotal = reservationType === ReservationType.TABLEONLY ? downPayment_tableOnly : getSubtotal(menusFromDb);
     const discount = !menusFromDb.length ? 0 : getDiscount(isMember, subtotal);

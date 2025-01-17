@@ -1,4 +1,5 @@
-import { ProductSelection, ReservationPaymentStatus } from "@/types/order.type";
+import { ReservationPaymentStatus } from "@/types/order.type";
+import { ProductSelection } from "@/types/product.type";
 
 export function getReservationDownPayment(paymentStatus: ReservationPaymentStatus, total: number): number {
   return paymentStatus === ReservationPaymentStatus.DOWNPAYMENT ? total / 2 : total;

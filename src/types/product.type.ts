@@ -1,5 +1,4 @@
 export interface Product {
-  // _id: string;
   productId: string;
   title: string;
   price: number;
@@ -24,4 +23,14 @@ export enum ProductCategory {
   FOOD = "food",
   DRINK = "drink",
   SNACK = "snack",
+}
+
+export interface DetailedProductSelection extends Product {
+  quantity: number;
+}
+
+export interface ProductSelection {
+  productId: string;
+  quantity: number;
+  price: number;
 }

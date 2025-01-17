@@ -1,10 +1,9 @@
 "use server";
 
 import connectToDatabase from "@/database/mongoose";
-import mongoose from "mongoose";
 import ProductModel from "@/database/models/product.model";
 import { deleteImageService, uploadImageService } from "@/services/image.service";
-import { ProductSelection } from "@/types/order.type";
+import { DetailedProductSelection, ProductSelection } from "@/types/product.type";
 import { Product } from "@/types/product.type";
 import { v4 as uuidv4 } from "uuid";
 
@@ -141,7 +140,7 @@ export async function deleteProductById(productId: string, imageUrl: string) {
   }
 }
 
-export async function getProductsSelectionFromDb(
+export async function prepareProductSelections(
   itemsFromClient: { productId: string; quantity: number }[]
 ): Promise<ProductSelection[] | []> {
   if (itemsFromClient.length === 0) return [];
@@ -171,6 +170,23 @@ export async function getProductsSelectionFromDb(
   } catch (error: any) {
     return error.message;
   }
+}
+
+export async function mergeProductDetails(selections: ProductSelection[]): Promise<DetailedProductSelection[] | []> {
+  if (selections.length === 0) return [];
+
+  const productIds = selections.map((selection) => selection.productId);
+  const products = await getSomeProductsById(productIds);
+
+  return selections.map((selection) => {
+    const product = products.find((p) => p.productId === selection.productId);
+    if (product)
+      return {
+        ...product._doc,
+        quantity: selection.quantity,
+        price: selection.price,
+      };
+  });
 }
 
 export async function getAllProducts() {

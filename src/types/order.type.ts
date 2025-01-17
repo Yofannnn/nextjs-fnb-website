@@ -1,3 +1,5 @@
+import { DetailedProductSelection } from "@/types/product.type";
+
 export interface Reservation {
   reservationId: string;
   customerName: string;
@@ -7,7 +9,7 @@ export interface Reservation {
   seatingPreference: ReservationSeatingPreference;
   specialRequest?: string;
   reservationType: ReservationType;
-  menus?: ProductSelection[];
+  menus?: DetailedProductSelection[];
   subtotal: number;
   discount: number;
   total: number;
@@ -60,7 +62,7 @@ export interface OnlineOrder {
   customerEmail: string;
   customerAddress: string;
   deliveryDate: Date;
-  items: ProductSelection[];
+  items: DetailedProductSelection[];
   note?: string;
   subtotal: number;
   shippingCost: number;
@@ -90,10 +92,4 @@ export interface InitializeOnlineOrderPayload {
   deliveryDate: Date;
   items: { productId: string; quantity: number }[];
   note?: string;
-}
-
-export interface ProductSelection {
-  productId: string;
-  quantity: number;
-  price: number;
 }

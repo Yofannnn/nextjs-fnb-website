@@ -2,7 +2,7 @@
 
 import connectToDatabase from "@/database/mongoose";
 import OnlineOrderModel from "@/database/models/online-order.model";
-import { getProductsSelectionFromDb } from "@/services/product.service";
+import { prepareProductSelections } from "@/services/product.service";
 import { initializeTransactionService, settlementTransactionService } from "@/services/transaction.service";
 import { createSessionCookie } from "@/services/session.service";
 import { verifySession } from "@/services/session.service";
@@ -30,7 +30,7 @@ export async function initializeOnlineOrderService(payload: InitializeOnlineOrde
     const isMember = session?.role === UserRole.Member;
     const orderId = uuidv4();
     const { customerName, customerEmail, customerAddress, deliveryDate, note, items } = payload;
-    const itemsFromDb = await getProductsSelectionFromDb(items);
+    const itemsFromDb = await prepareProductSelections(items);
     const subtotal = getSubtotal(itemsFromDb);
     const discount = getDiscount(!!isMember, subtotal);
     const shippingCost = getShippingCost();
@@ -162,10 +162,6 @@ export async function getFilteredOnlineOrder({
 
 export async function getOnlineOrderById(orderId: string) {
   return await OnlineOrderModel.findOne({ orderId });
-}
-
-export async function getOnlineOrdersByEmail(customerEmail: string) {
-  return await OnlineOrderModel.find({ customerEmail });
 }
 
 export async function deleteOnlineOrderById(orderId: string) {
