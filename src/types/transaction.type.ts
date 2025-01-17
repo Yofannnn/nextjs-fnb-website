@@ -1,25 +1,38 @@
 export type Transaction = {
   transactionId: string;
   orderId: string;
-  orderType: "reservation" | "online-order";
+  orderType: TransactionOrderType;
   grossAmount: number;
   currency?: string;
   vaNumbers?: { bank: string; vaNumber: string }[];
   paymentAmounts?: { amount: number; paidAt: Date }[];
   paymentType?: string;
-  paymentPurpose: "downPayment" | "paid";
-  transactionStatus:
-    | "settlement"
-    | "pending"
-    | "expire"
-    | "deny"
-    | "cancel"
-    | "refund";
+  paymentPurpose: TransactionPaymentPurpose;
+  transactionStatus: TransactionStatus;
   transactionTime: Date;
   settlementTime?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
+
+export enum TransactionOrderType {
+  RESERVATION = "reservation",
+  ONLINEORDER = "online-order",
+}
+
+export enum TransactionStatus {
+  SETTLEMENT = "settlement",
+  PENDING = "pending",
+  EXPIRE = "expire",
+  DENY = "deny",
+  CANCEL = "cancel",
+  REFUND = "refund",
+}
+
+export enum TransactionPaymentPurpose {
+  DOWNPAYMENT = "downPayment",
+  PAID = "paid",
+}
 
 export type TransactionSuccess = {
   status_code: number;

@@ -15,7 +15,7 @@ import { rupiah } from "@/lib/format-currency";
 
 export default function DashboardReservationDetails({ reservationId }: { reservationId: string }) {
   const route = useRouter();
-  const queryKey = ["reservation"];
+  const queryKey = ["reservation", reservationId];
   const { data, error, isLoading } = useQuery({
     queryKey,
     queryFn: async () => {

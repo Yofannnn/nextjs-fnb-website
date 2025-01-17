@@ -1,32 +1,41 @@
-import MemberTransactionListPage from "@/components/pages/MemberTransactionListPage";
-import { verifySession } from "@/lib/dal";
+"use client";
 
-async function getTransactions(accessId: string) {
-  try {
-    const res = await fetch(
-      `${process.env.BASE_URL}/api/transaction?accessId=${accessId}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.statusText);
-    return {
-      success: true,
-      data: result.data,
-    };
-  } catch (error: any) {
-    return { success: false, message: error.message };
-  }
-}
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import DashboardTransactionList from "@/components/pages/DashboardTransactionList";
 
-export default async function DashboardTransaction() {
-  const { isAuth, userId } = await verifySession();
-  const { success, message, data } = await getTransactions(userId as string);
+export default function DashboardTransactionListPage() {
+  const searchParams = useSearchParams();
+  const orderType = searchParams.get("orderType");
+  const paymentPurpose = searchParams.get("paymentPurpose");
+  const transactionStatus = searchParams.get("transactionStatus");
+  const queryKey = ["transaction-list", orderType, paymentPurpose, transactionStatus].filter(Boolean);
+  const queryParams = {
+    ...(orderType && { orderType }),
+    ...(paymentPurpose && { paymentPurpose }),
+    ...(transactionStatus && { transactionStatus }),
+  };
+  const queryString = new URLSearchParams(queryParams).toString();
 
-  if (!isAuth) return null;
-  if (!success) throw new Error(message);
-  if (data.length === 0) return <h1>Sorry you have no Transaction</h1>;
-  return <MemberTransactionListPage transactionList={data} />;
+  const { data, error, isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const response = await fetch(`/api/transaction/user?${queryString}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.statusText);
+      return result.data;
+    },
+    staleTime: 60 * 1000 * 5,
+  });
+
+  return (
+    <DashboardTransactionList
+      orderType={orderType}
+      paymentPurpose={paymentPurpose}
+      transactionStatus={transactionStatus}
+      isLoading={isLoading}
+      error={error}
+      transactionList={data || []}
+    />
+  );
 }

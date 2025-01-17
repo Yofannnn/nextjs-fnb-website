@@ -9,7 +9,7 @@ export default function MemberDashboardReservation() {
   const reservationStatus = searchParams.get("reservationStatus");
   const reservationType = searchParams.get("reservationType");
   const reservationDate = searchParams.get("reservationDate");
-  const queryKey = ["reservations", reservationStatus, reservationType, reservationDate].filter(Boolean);
+  const queryKey = ["reservation-list", reservationStatus, reservationType, reservationDate].filter(Boolean);
 
   const queryParams = {
     ...(reservationStatus && { reservationStatus }),

@@ -5,11 +5,7 @@ import TransactionModel from "@/database/models/transaction.model";
 import { getMidtransTransactionDetails, requestMidtransTransaction } from "@/midtrans/init";
 import { TransactionSchema } from "@/validations/transaction.validation";
 
-type Response<T = any> =
-  | { success: true; message: string; data: T }
-  | { success: false; message: string; data?: undefined };
-
-export async function initializeTransactionService(payload: any): Promise<Response> {
+export async function initializeTransactionService(payload: any) {
   try {
     const validationBody = await TransactionSchema.safeParseAsync({
       ...payload,
@@ -55,7 +51,7 @@ export async function initializeTransactionService(payload: any): Promise<Respon
   }
 }
 
-export async function settlementTransactionService(orderId: string): Promise<Response> {
+export async function settlementTransactionService(orderId: string) {
   try {
     const midtransTransactionDetails = await getMidtransTransactionDetails(orderId);
 
@@ -85,10 +81,33 @@ export async function settlementTransactionService(orderId: string): Promise<Res
   }
 }
 
+export async function getFilteredTransaction({
+  orderIds,
+  orderType,
+  paymentPurpose,
+  transactionStatus,
+}: {
+  orderIds?: string[];
+  orderType?: string;
+  paymentPurpose?: string;
+  transactionStatus?: string;
+}) {
+  return await TransactionModel.find({
+    ...(orderIds && { orderId: { $in: orderIds } }),
+    ...(orderType && { orderType }),
+    ...(paymentPurpose && { paymentPurpose }),
+    ...(transactionStatus && { transactionStatus }),
+  });
+}
+
 export async function getTransactionByOrderId(orderId: string) {
   return await TransactionModel.findOne({ orderId });
 }
 
 export async function getSomeTransactionsByOrderId(orderIds: string[]) {
   return await TransactionModel.find({ orderId: { $in: orderIds } });
+}
+
+export async function getTransactionList() {
+  return await TransactionModel.find();
 }

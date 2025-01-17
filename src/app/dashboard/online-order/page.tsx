@@ -8,7 +8,7 @@ export default function DashboardOnlineOrderListPage() {
   const searchParams = useSearchParams();
   const deliveryDate = searchParams.get("deliveryDate");
   const orderStatus = searchParams.get("orderStatus");
-  const queryKey = ["online-orders", deliveryDate, orderStatus].filter(Boolean);
+  const queryKey = ["online-order-list", deliveryDate, orderStatus].filter(Boolean);
   const queryParams = { ...(deliveryDate && { deliveryDate }), ...(orderStatus && { orderStatus }) };
   const queryString = new URLSearchParams(queryParams).toString();
 
