@@ -112,10 +112,13 @@ export async function settlementTransactionService(orderId: string) {
  * Get a list of transactions that match the given filter criteria.
  *
  * @param {object} [filter] - The filter criteria.
- * @param {string[]} [filter.orderIds] - The orderIds to filter by.
- * @param {string} [filter.orderType] - The orderType to filter by.
- * @param {string} [filter.paymentPurpose] - The paymentPurpose to filter by.
- * @param {string} [filter.transactionStatus] - The transactionStatus to filter by.
+ * @param {string[]} [filter.orderIds] - The order IDs to filter by.
+ * @param {string} [filter.orderType] - The order type to filter by.
+ * @param {string} [filter.paymentPurpose] - The payment purpose to filter by.
+ * @param {string} [filter.transactionStatus] - The transaction status to filter by.
+ * @param {string} [filter.transactionTime] - The transaction time to filter by in the format of
+ *   a timestamp in milliseconds. The date will be adjusted to the start of the day in
+ *   the user's timezone and the end of the day in the user's timezone.
  * @returns {Promise<Transaction[]>} - The list of transactions that match the filter criteria.
  */
 export async function getFilteredTransaction({
@@ -123,17 +126,43 @@ export async function getFilteredTransaction({
   orderType,
   paymentPurpose,
   transactionStatus,
+  transactionTime,
 }: {
   orderIds?: string[];
   orderType?: string;
   paymentPurpose?: string;
   transactionStatus?: string;
+  transactionTime?: string;
 }) {
+  let dateQuery = {};
+
+  if (transactionTime) {
+    const providedTimestamp = Number(transactionTime);
+    const timezoneOffsetInMs = 7 * 60 * 60 * 1000; // GMT+7 offset in milliseconds
+
+    // Adjust providedTimestamp by adding 1 day (24 hours in milliseconds)
+    const adjustedTimestamp = providedTimestamp + 24 * 60 * 60 * 1000;
+
+    const startOfDay = new Date(adjustedTimestamp - timezoneOffsetInMs);
+    startOfDay.setUTCHours(0, 0, 0, 0); // Start of day in UTC
+
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setUTCHours(23, 59, 59, 999); // End of day in UTC
+
+    dateQuery = {
+      transactionTime: {
+        $gte: startOfDay,
+        $lt: endOfDay,
+      },
+    };
+  }
+
   return await TransactionModel.find({
     ...(orderIds && { orderId: { $in: orderIds } }),
     ...(orderType && { orderType }),
     ...(paymentPurpose && { paymentPurpose }),
     ...(transactionStatus && { transactionStatus }),
+    ...dateQuery,
   });
 }
 
