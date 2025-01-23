@@ -134,3 +134,100 @@ export function confirmOnlineOrderHTML(payload: OnlineOrder) {
 </html>
 `;
 }
+
+export function sendOTPHTML(email: string, otp: string) {
+  return `<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your OTP Code</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 0;
+        padding: 0;
+      }
+      .email-container {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .email-header {
+        background-color: #4caf50;
+        color: #ffffff;
+        text-align: center;
+        padding: 20px;
+      }
+      .email-header h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .email-body {
+        padding: 20px;
+      }
+      .email-body p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: #333333;
+      }
+      .otp-code {
+        display: inline-block;
+        font-size: 24px;
+        color: #4caf50;
+        font-weight: bold;
+        background-color: #f7f7f7;
+        border: 1px dashed #4caf50;
+        border-radius: 8px;
+        padding: 10px 20px;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .email-footer {
+        background-color: #f1f1f1;
+        padding: 10px 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #555555;
+      }
+      .email-footer a {
+        color: #4caf50;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <!-- Header -->
+      <div class="email-header">
+        <h1>Your One-Time Password (OTP)</h1>
+      </div>
+
+      <!-- Body -->
+      <div class="email-body">
+        <p>Dear ${email},</p>
+        <p>
+          To proceed with accessing your account or completing your transaction, please use the OTP below. 
+          This code is valid for the next <strong>5 minutes</strong>.
+        </p>
+        <div class="otp-code">${otp}</div>
+        <p>
+          If you didn't request this OTP, please disregard this email or 
+          <a href="mailto:support@example.com">contact support</a> if you suspect unauthorized activity.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="email-footer">
+        <p>Thank you for choosing [Your Company Name].</p>
+        <p><a href="#">Visit our website</a> | <a href="mailto:support@example.com">Contact Support</a></p>
+      </div>
+    </div>
+  </body>
+  </html>`;
+}
