@@ -1,4 +1,5 @@
 import { model, models, Schema } from "mongoose";
+import { OnlineOrderStatus } from "@/types/order.type";
 
 const OnlineOrderSchema = new Schema(
   {
@@ -25,26 +26,18 @@ const OnlineOrderSchema = new Schema(
     transactionId: { type: String, required: true },
     orderStatus: {
       type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "processing",
-        "shipping",
-        "delivered",
-        "cancelled",
-        "expired",
-      ],
+      enum: OnlineOrderStatus,
       required: true,
-      default: "pending",
+      default: OnlineOrderStatus.PENDING,
     },
     reasonCancellation: { type: String, required: false },
+    deliveredAt: { type: Date, required: false },
   },
   {
     timestamps: true,
   }
 );
 
-const OnlineOrderModel =
-  models.OnlineOrder || model("OnlineOrder", OnlineOrderSchema);
+const OnlineOrderModel = models.OnlineOrder || model("OnlineOrder", OnlineOrderSchema);
 
 export default OnlineOrderModel;

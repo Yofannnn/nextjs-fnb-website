@@ -9,9 +9,10 @@ import { verifySession } from "@/services/session.service";
 import { sendEmail } from "@/services/email.service";
 import { v4 as uuidv4 } from "uuid";
 import { UserRole } from "@/types/user.type";
-import { InitializeOnlineOrderPayload } from "@/types/order.type";
+import { InitializeOnlineOrderPayload, OnlineOrderStatus } from "@/types/order.type";
 import { getDiscount, getShippingCost, getSubtotal } from "@/lib/calculation";
 import { confirmOnlineOrderHTML } from "@/lib/email-html";
+import { TransactionOrderType, TransactionPaymentPurpose, TransactionStatus } from "@/types/transaction.type";
 
 /**
  * Initialize a new online order by storing the online order to the database and
@@ -37,16 +38,17 @@ export async function initializeOnlineOrderService(payload: InitializeOnlineOrde
     const totalAmount = subtotal + shippingCost - discount;
     const transactionPayload = {
       orderId,
-      orderType: "online-order",
+      orderType: TransactionOrderType.ONLINEORDER,
       grossAmount: totalAmount,
-      paymentPurpose: "paid",
-      transactionStatus: "pending",
+      paymentPurpose: TransactionPaymentPurpose.PAID,
+      transactionStatus: TransactionStatus.PENDING,
       transactionTime: new Date(),
     };
 
     const newTransaction = await initializeTransactionService(transactionPayload);
+    if (!newTransaction.success) throw new Error(newTransaction.message);
 
-    const { midtransPaymentToken } = newTransaction.data;
+    const midtransPaymentToken = newTransaction.data?.midtransPaymentToken;
 
     const onlineOrderPayload = {
       orderId,
@@ -76,36 +78,85 @@ export async function initializeOnlineOrderService(payload: InitializeOnlineOrde
 }
 
 /**
- * Confirm an online order by updating the order status to "confirmed" and sending
- * a confirmation email to the customer.
+ * Updates the status of an online order in the database and performs related actions.
  *
- * @param {string} orderId - The ID of the online order.
- * @returns {Promise<{ success: boolean; message: string; data: OnlineOrder | null }>} - The result of the confirmation.
- *   If success is true, the data is the updated online order, otherwise the data is null.
+ * This function updates the status of an online order to one of the specified statuses:
+ * - CONFIRMED: Settles the transaction and sends a confirmation email to the customer.
+ * - PROCESSING: Updates the status to processing if the current status is confirmed.
+ * - SHIPPING: Updates the status to shipping if the current status is processing.
+ * - DELIVERED: Updates the status to delivered if the current status is shipping.
+ *
+ * @param {string} orderId - The ID of the online order to update.
+ * @param {OnlineOrderStatus} action - The new status to apply to the order.
+ * @returns {Promise<{ success: boolean; message: string }>} - An object indicating the success
+ *   of the operation and a message with additional information.
+ *
+ * @throws Will throw an error if the order cannot be found, if the status transition is invalid,
+ *   or if the action is not supported.
  */
-export async function confirmOnlineOrderService(orderId: string) {
+export async function updateOnlineOrderStatusService(orderId: string, action: OnlineOrderStatus) {
   try {
-    const settlementTransaction = await settlementTransactionService(orderId);
-    if (!settlementTransaction.success) throw new Error(settlementTransaction.message);
+    await connectToDatabase();
 
-    const updateOnlineOrder = await OnlineOrderModel.findOneAndUpdate(
-      { orderId },
-      { orderStatus: "confirmed" },
-      { new: true }
-    );
-    if (!updateOnlineOrder) throw new Error("Something went wrong");
+    // confirm online order -- after user transaction
+    if (action === OnlineOrderStatus.CONFIRMED) {
+      const settlementTransaction = await settlementTransactionService(orderId);
+      if (!settlementTransaction.success) throw new Error(settlementTransaction.message);
 
-    const sendingEmail = await sendEmail({
-      to: updateOnlineOrder.customerEmail,
-      subject: "Online Order Confirmation",
-      text: "Your order has been confirmed.",
-      html: confirmOnlineOrderHTML(updateOnlineOrder),
-    });
+      const updateOnlineOrder = await updateOnlineOrderStatusByOrderId(orderId, action);
+      if (!updateOnlineOrder) throw new Error("Something went wrong");
 
-    return { success: true, message: "Success.", data: updateOnlineOrder };
+      const sendingEmail = await sendEmail({
+        to: updateOnlineOrder.customerEmail,
+        subject: "Online Order Confirmation",
+        text: "Your order has been confirmed.",
+        html: confirmOnlineOrderHTML(updateOnlineOrder),
+      });
+
+      return { success: true, message: "Success." };
+    }
+
+    const order = await getOnlineOrderById(orderId);
+    if (!order) throw new Error("Sorry, we can't find your online order.");
+
+    const orderStatus = order.orderStatus as OnlineOrderStatus;
+
+    // process online order
+    if (action === OnlineOrderStatus.PROCESSING) {
+      if (orderStatus !== OnlineOrderStatus.CONFIRMED) throw new Error("Sorry, we can't update the online order status.");
+      const updateOnlineOrder = await updateOnlineOrderStatusByOrderId(orderId, action);
+      if (!updateOnlineOrder) throw new Error("Something went wrong");
+      return { success: true, message: "Success." };
+    }
+
+    // shipping online order
+    if (action === OnlineOrderStatus.SHIPPING) {
+      if (orderStatus !== OnlineOrderStatus.PROCESSING) throw new Error("Sorry, we can't update the online order status.");
+      const updateOnlineOrder = await updateOnlineOrderStatusByOrderId(orderId, action);
+      if (!updateOnlineOrder) throw new Error("Something went wrong");
+      return { success: true, message: "Success." };
+    }
+
+    // deliver online order
+    if (action === OnlineOrderStatus.DELIVERED) {
+      if (orderStatus !== OnlineOrderStatus.SHIPPING) throw new Error("Sorry, we can't update the online order status.");
+      const updateOnlineOrder = await OnlineOrderModel.findOneAndUpdate(
+        { orderId },
+        { orderStatus: action, deliveredAt: new Date().toISOString() },
+        { new: true }
+      );
+      if (!updateOnlineOrder) throw new Error("Something went wrong");
+      return { success: true, message: "Success." };
+    }
+
+    throw new Error("Action is not supported.");
   } catch (error: any) {
     return { success: false, message: error.message };
   }
+}
+
+async function updateOnlineOrderStatusByOrderId(orderId: string, orderStatus: OnlineOrderStatus) {
+  return await OnlineOrderModel.findOneAndUpdate({ orderId }, { orderStatus }, { new: true });
 }
 
 /**

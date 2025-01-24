@@ -71,6 +71,7 @@ export interface OnlineOrder {
   transactionId: string;
   orderStatus: OnlineOrderStatus;
   reasonCancellation?: string;
+  deliveredAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
